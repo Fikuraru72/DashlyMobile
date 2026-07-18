@@ -12,6 +12,7 @@ class LocationService {
   StreamSubscription<Position>? _positionStream;
   Timer? _heartbeatTimer;
   Position? _lastPosition;
+  bool isFrozen = false;
 
   LocationService(this._mqttService);
 
@@ -129,9 +130,26 @@ class LocationService {
   }
 
   void _publish(Position p, int eventId, int userId) {
+    if (isFrozen) {
+      print('TRACKER: ❄️ [DEBUG] Location frozen, skipping publish.');
+      return;
+    }
     final String msgId = Ulid().toString();
-    final DateTime capturedAt = DateTime.now();
     
+    // Perbaikan: Ambil waktu lokal, lalu convert ke UTC agar terbaca benar oleh Server (ISO 8601 dengan 'Z')
+    final DateTime localTime = DateTime.now();
+    final DateTime capturedAt = localTime.toUtc();
+    
+    // ==========================================
+    // KODE PENGUJIAN LATENSI (SISI MOBILE)
+    // ==========================================
+    final timeFormatted = "${localTime.hour.toString().padLeft(2, '0')}:"
+                          "${localTime.minute.toString().padLeft(2, '0')}:"
+                          "${localTime.second.toString().padLeft(2, '0')}."
+                          "${localTime.millisecond.toString().padLeft(3, '0')}";
+    print("[LATENCY TEST] Data GPS Dibuat/Dikirim pada: " + timeFormatted);
+    // ==========================================
+
     if (_mqttService.isConnected) {
       _mqttService.publishLocation(
         eventId: eventId,
@@ -139,6 +157,7 @@ class LocationService {
         lat: p.latitude,
         lng: p.longitude,
         speed: p.speed * 3.6,
+        altitude: p.altitude,
         status: 'moving',
         isAnomaly: false,
         msgId: msgId,
@@ -153,6 +172,7 @@ class LocationService {
         lat: p.latitude,
         lng: p.longitude,
         speed: p.speed * 3.6,
+        altitude: p.altitude,
         status: 'moving',
         isAnomaly: false,
         timestamp: capturedAt,

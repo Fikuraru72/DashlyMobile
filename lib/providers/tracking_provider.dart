@@ -88,6 +88,14 @@ class TrackingProvider extends ChangeNotifier {
           _progressPercentage = (stats['progressPercentage'] ?? 0.0).toDouble();
           _totalDistance = (stats['distanceCovered'] ?? 0.0).toDouble() / 1000.0; // from m to km
           _checkpointsCompleted = stats['checkpointsCompleted'] ?? 0;
+          
+          // Auto-unfreeze if the dashboard cleared our FROZEN state
+          if (_isSosTriggered && stats['participantState'] != null && stats['participantState'] != 'FROZEN') {
+            print('PROV: 🔓 [DEBUG] Dashboard unfroze participant. Clearing SOS lock.');
+            _isSosTriggered = false;
+            _locationService.isFrozen = false;
+          }
+          
           notifyListeners();
         }
       });
@@ -107,6 +115,7 @@ class TrackingProvider extends ChangeNotifier {
     _statsTimer?.cancel();
     _isTracking = false;
     _isSosTriggered = false;
+    _locationService.isFrozen = false;
     _mqttService.setTrackingActive(false);
     _locationService.stopTracking();
     _mqttService.publishStatus('OFFLINE');
@@ -123,6 +132,7 @@ class TrackingProvider extends ChangeNotifier {
     }
     print('PROV: 🚨 [DEBUG] SOS TRIGGERED!');
     _isSosTriggered = true;
+    _locationService.isFrozen = true;
     _mqttService.publishSos(_currentPosition!.latitude, _currentPosition!.longitude);
     notifyListeners();
     return true;
