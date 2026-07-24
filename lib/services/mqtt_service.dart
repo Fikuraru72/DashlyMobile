@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../core/constants/app_constants.dart';
 import 'offline_storage_service.dart';
+import 'package:battery_plus/battery_plus.dart';
 
 /// ════════════════════════════════════════════════════════════════
 /// Dashly Phase 7 — MQTT Service (TCP on port 1883)
@@ -16,6 +17,7 @@ import 'offline_storage_service.dart';
 /// ════════════════════════════════════════════════════════════════
 class MqttService {
   late MqttServerClient _client;
+  final Battery _battery = Battery();
   bool _isConnected = false;
   Timer? _reconnectTimer;
 
@@ -111,11 +113,32 @@ class MqttService {
 
   // ── Callbacks ─────────────────────────────────────────────
 
+  void Function(Map<String, dynamic>)? onDistancesReceived;
+
   void _onConnected() {
     _isConnected = true;
     _isManualDisconnect = false;
     _reconnectTimer?.cancel();
     print('MQTT: ✅ Connected Successfully to ${AppConstants.mqttHost}:${AppConstants.mqttPort}');
+
+    if (_currentEventId != null && _currentUserId != null) {
+      final distanceTopic = 'dashly/events/$_currentEventId/p/$_currentUserId/distances';
+      _client.subscribe(distanceTopic, MqttQos.atMostOnce);
+      print('MQTT: 📥 Subscribed to broadcast topic: $distanceTopic');
+
+      _client.updates?.listen((List<MqttReceivedMessage<MqttMessage>> messages) {
+        for (var msg in messages) {
+          final recMsg = msg.payload as MqttPublishMessage;
+          final payloadStr = MqttPublishPayload.bytesToStringAsString(recMsg.payload.message);
+          try {
+            final data = jsonDecode(payloadStr) as Map<String, dynamic>;
+            onDistancesReceived?.call(data);
+          } catch (e) {
+            print('MQTT: Failed to parse broadcast payload: $e');
+          }
+        }
+      });
+    }
     
     if (_isTrackingActive) {
       publishStatus('ONLINE');
@@ -255,18 +278,19 @@ class MqttService {
 
   /// Official method to publish tracking data to the backend.
   /// Used by LocationService for real-time and buffered sync.
-  void publishLocation({
+  Future<void> publishLocation({
     required int eventId,
     required int userId,
     required double lat,
     required double lng,
     required double speed,
+    required double altitude,
     required String status,
     required bool isAnomaly,
     required String msgId,
     required DateTime timestamp,
     bool isOffline = false,
-  }) {
+  }) async {
     if (!_isConnected) {
       print('MQTT: ⚠️ [DEBUG] Cannot publish location — not connected.');
       return;
@@ -274,16 +298,24 @@ class MqttService {
 
     final String topic = 'dashly/events/$eventId/p/$userId/loc';
     
+    int? batteryLevel;
+    try {
+      batteryLevel = await _battery.batteryLevel;
+    } catch (e) {
+      print('MQTT: Failed to get battery level: $e');
+    }
+
     final Map<String, dynamic> data = {
       'msg_id': msgId,
       'lat': lat,
       'lng': lng,
       'speed': speed,
+      'altitude': altitude,
       'status': status,
       'isAnomaly': isAnomaly,
       'captured_at': timestamp.toIso8601String(),
       'isOffline': isOffline,
-      'battery': 100,
+      if (batteryLevel != null) 'battery': batteryLevel,
     };
 
     final String payload = jsonEncode(data);

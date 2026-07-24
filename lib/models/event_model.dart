@@ -38,6 +38,10 @@ class Event {
   final double? latitude;
   final double? longitude;
   final ParticipantState? participantState;
+  
+  final int? totalDistanceMeters;
+  final int? totalElevationMeters;
+  final List<dynamic>? altitudeProfile;
 
   const Event({
     required this.id,
@@ -60,6 +64,9 @@ class Event {
     this.latitude,
     this.longitude,
     this.participantState,
+    this.totalDistanceMeters,
+    this.totalElevationMeters,
+    this.altitudeProfile,
   });
 
   /// Computed: The actual time monitoring window opens
@@ -115,6 +122,9 @@ class Event {
         latitude: json['latitude'] != null ? double.tryParse(json['latitude'].toString()) : null,
         longitude: json['longitude'] != null ? double.tryParse(json['longitude'].toString()) : null,
         participantState: _parseParticipantState(json['participantState'] as String?),
+        totalDistanceMeters: json['totalDistanceMeters'] != null ? (json['totalDistanceMeters'] as num).toInt() : null,
+        totalElevationMeters: json['totalElevationMeters'] != null ? (json['totalElevationMeters'] as num).toInt() : null,
+        altitudeProfile: json['altitudeProfile'] as List<dynamic>?,
       );
 
   static EventStatus _parseStatus(String status) {

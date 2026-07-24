@@ -127,11 +127,11 @@ class EventDetailScreen extends StatelessWidget {
               Text("You have successfully joined the event.", style: TextStyle(color: ctx.dashlyColors.textSecondary)),
               const SizedBox(height: 20),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: ctx.dashlyColors.accent.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: ctx.dashlyColors.accent),
+                  color: ctx.dashlyColors.surface,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: ctx.dashlyColors.divider),
                 ),
                 child: Column(
                   children: [
@@ -274,6 +274,10 @@ class EventDetailScreen extends StatelessWidget {
                       event.description,
                       style: TextStyle(color: context.dashlyColors.textSecondary, height: 1.6, fontSize: 16),
                     ),
+                    const SizedBox(height: 32),
+                    
+                    _buildRouteInfo(context, event),
+                    
                     const SizedBox(height: 32),
                     
                     // Location Link
@@ -429,6 +433,73 @@ class EventDetailScreen extends StatelessWidget {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
       child: Text("EVENT HAS ENDED", style: TextStyle(color: context.dashlyColors.textHint, fontWeight: FontWeight.bold)),
+    );
+  }
+
+  Widget _buildRouteInfo(BuildContext context, Event event) {
+    if (event.totalDistanceMeters == null && (event.altitudeProfile == null || event.altitudeProfile!.isEmpty)) {
+      return const SizedBox.shrink();
+    }
+
+    double startElev = 0;
+    double endElev = 0;
+    double avgElev = 0;
+    
+    if (event.altitudeProfile != null && event.altitudeProfile!.isNotEmpty) {
+      startElev = (event.altitudeProfile!.first['elevation'] as num).toDouble();
+      endElev = (event.altitudeProfile!.last['elevation'] as num).toDouble();
+      
+      double sumElev = 0;
+      for (var pt in event.altitudeProfile!) {
+        sumElev += (pt['elevation'] as num).toDouble();
+      }
+      avgElev = sumElev / event.altitudeProfile!.length;
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          "ROUTE INFO",
+          style: TextStyle(color: context.dashlyColors.textSecondary, fontWeight: FontWeight.bold, fontSize: 14),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: context.dashlyColors.surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: context.dashlyColors.divider),
+          ),
+          child: Column(
+            children: [
+              if (event.totalDistanceMeters != null)
+                _buildRouteInfoRow(context, Icons.straighten, "Total Distance", "${(event.totalDistanceMeters! / 1000).toStringAsFixed(2)} km"),
+              if (event.totalDistanceMeters != null && event.altitudeProfile != null)
+                const Divider(height: 24, thickness: 1),
+              if (event.altitudeProfile != null && event.altitudeProfile!.isNotEmpty) ...[
+                _buildRouteInfoRow(context, Icons.trending_up, "Start Elevation", "${startElev.round()} m"),
+                const Divider(height: 24, thickness: 1),
+                _buildRouteInfoRow(context, Icons.flag_outlined, "End Elevation", "${endElev.round()} m"),
+                const Divider(height: 24, thickness: 1),
+                _buildRouteInfoRow(context, Icons.bar_chart, "Avg Elevation", "${avgElev.round()} m"),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRouteInfoRow(BuildContext context, IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Icon(icon, color: context.dashlyColors.accent, size: 20),
+        const SizedBox(width: 12),
+        Text(label, style: TextStyle(color: context.dashlyColors.textSecondary, fontSize: 14)),
+        const Spacer(),
+        Text(value, style: TextStyle(color: context.dashlyColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 14)),
+      ],
     );
   }
 

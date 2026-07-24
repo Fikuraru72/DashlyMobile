@@ -4,6 +4,7 @@ import 'home/home_screen.dart';
 import 'events/explore_screen.dart';
 import 'events/history_screen.dart';
 import 'profile/profile_screen.dart';
+import '../services/location_service.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -14,6 +15,12 @@ class MainNavigation extends StatefulWidget {
 
 class _MainNavigationState extends State<MainNavigation> {
   int _selectedIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    LocationService.requestPermissionsInitially();
+  }
 
   final List<Widget> _screens = [
     const HomeScreen(),

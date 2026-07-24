@@ -1,11 +1,12 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
-import 'dart:convert';
+import 'package:battery_plus/battery_plus.dart';
 
 class OfflineStorageService {
   static Database? _database;
   static const String tableName = 'offline_locations';
+  static final Battery _battery = Battery();
 
   static Future<Database> get database async {
     if (_database != null) return _database!;
@@ -19,7 +20,7 @@ class OfflineStorageService {
 
     return await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: (db, version) async {
         await _createTable(db);
       },
@@ -39,6 +40,7 @@ class OfflineStorageService {
         lat REAL,
         lng REAL,
         speed REAL,
+        altitude REAL,
         status TEXT,
         isAnomaly INTEGER,
         captured_at TEXT,
@@ -54,11 +56,19 @@ class OfflineStorageService {
     required double lat,
     required double lng,
     required double speed,
+    required double altitude,
     required String status,
     required bool isAnomaly,
     required DateTime timestamp,
   }) async {
     final db = await database;
+    int? batteryLevel;
+    try {
+      batteryLevel = await _battery.batteryLevel;
+    } catch (e) {
+      print('OfflineStorage: Failed to get battery level: $e');
+    }
+
     await db.insert(
       tableName,
       {
@@ -68,10 +78,11 @@ class OfflineStorageService {
         'lat': lat,
         'lng': lng,
         'speed': speed,
+        'altitude': altitude,
         'status': status,
         'isAnomaly': isAnomaly ? 1 : 0,
         'captured_at': timestamp.toIso8601String(),
-        'battery': 100, // Or actual battery if available
+        if (batteryLevel != null) 'battery': batteryLevel,
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
     );

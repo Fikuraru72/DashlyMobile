@@ -16,6 +16,13 @@ class LocationService {
 
   LocationService(this._mqttService);
 
+  static Future<void> requestPermissionsInitially() async {
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      await Geolocator.requestPermission();
+    }
+  }
+
   Stream<Position> _createPositionStream() {
     LocationSettings settings;
     if (Platform.isAndroid) {

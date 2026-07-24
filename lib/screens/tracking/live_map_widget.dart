@@ -23,8 +23,14 @@ const String _lightStyleUrl =
 class LiveMapWidget extends StatefulWidget {
   final DashlyLatLng? currentPosition;
   final Map<String, dynamic>? routeGeojson;
+  final void Function(MapLibreMapController)? onControllerCreated;
 
-  const LiveMapWidget({super.key, required this.currentPosition, this.routeGeojson});
+  const LiveMapWidget({
+    super.key,
+    required this.currentPosition,
+    this.routeGeojson,
+    this.onControllerCreated,
+  });
 
   @override
   State<LiveMapWidget> createState() => _LiveMapWidgetState();
@@ -43,6 +49,7 @@ class _LiveMapWidgetState extends State<LiveMapWidget> {
 
   void _onMapCreated(MapLibreMapController controller) {
     _mapController = controller;
+    widget.onControllerCreated?.call(controller);
   }
 
   void _onStyleLoaded() {
@@ -122,7 +129,7 @@ class _LiveMapWidgetState extends State<LiveMapWidget> {
       myLocationEnabled: true,
       myLocationTrackingMode: MyLocationTrackingMode.tracking,
       myLocationRenderMode: MyLocationRenderMode.compass,
-      compassEnabled: true,
+      compassEnabled: false,
       attributionButtonMargins: const Point(-100, -100), // hide off-screen
     );
   }

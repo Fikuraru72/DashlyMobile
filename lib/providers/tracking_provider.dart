@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:geolocator/geolocator.dart';
 import '../models/event_model.dart';
 import '../services/location_service.dart';
 import '../services/mqtt_service.dart';
@@ -12,15 +14,23 @@ class TrackingProvider extends ChangeNotifier {
   
   bool _isTracking = false;
   double _currentSpeed = 0.0;
-  double _totalDistance = 0.0;
-  int _currentRank = 12;
+  double _totalDistance = 0.0; // in km
+  double _elevationGain = 0.0; // in meters
+  double _lastAltitude = -9999.0;
+  int _currentRank = 0;
+  int _totalParticipants = 0;
+  List<Map<String, dynamic>> _otherRunners = [];
   DashlyLatLng? _currentPosition;
+  Position? _lastGpsPosition;
   EventCategory _category = EventCategory.running;
 
   bool get isTracking => _isTracking;
   double get currentSpeed => _currentSpeed;
   double get totalDistance => _totalDistance;
+  double get elevationGain => _elevationGain;
   int get currentRank => _currentRank;
+  int get totalParticipants => _totalParticipants;
+  List<Map<String, dynamic>> get otherRunners => _otherRunners;
   DashlyLatLng? get currentPosition => _currentPosition;
   bool get isMqttConnected => _mqttService.isConnected;
   EventCategory get category => _category;
@@ -28,17 +38,24 @@ class TrackingProvider extends ChangeNotifier {
   TrackingProvider({MqttService? mqttService, LocationService? locationService})
       : _mqttService = mqttService ?? MqttService() {
     _locationService = locationService ?? LocationService(_mqttService);
+
+    // Listen for broadcast payload from backend (sharded proximity runners + rank)
+    _mqttService.onDistancesReceived = (data) {
+      if (data.containsKey('rank')) {
+        _currentRank = (data['rank'] as num).toInt();
+      }
+      if (data.containsKey('total')) {
+        _totalParticipants = (data['total'] as num).toInt();
+      }
+      if (data.containsKey('runners') && data['runners'] is List) {
+        _otherRunners = List<Map<String, dynamic>>.from(data['runners']);
+      }
+      notifyListeners();
+    };
   }
 
   bool _isSosTriggered = false;
   bool get isSosTriggered => _isSosTriggered;
-  
-  double _progressPercentage = 0.0;
-  int _checkpointsCompleted = 0;
-  Timer? _statsTimer;
-  
-  double get progressPercentage => _progressPercentage;
-  int get checkpointsCompleted => _checkpointsCompleted;
 
   Future<void> startTracking(int eventId, int userId, {EventCategory category = EventCategory.running}) async {
     print('PROV: 🏁 [DEBUG] startTracking triggered for event: $eventId, user: $userId');
@@ -46,11 +63,15 @@ class TrackingProvider extends ChangeNotifier {
     try {
       _isTracking = true;
       _isSosTriggered = false;
-      _totalDistance = 0.0;
-      _currentRank = 0;
-      _progressPercentage = 0.0;
-      _checkpointsCompleted = 0;
       _category = category;
+
+      // Load persistent distance from SharedPreferences if available
+      final prefs = await SharedPreferences.getInstance();
+      final savedDistKey = 'event_${eventId}_accumulated_dist';
+      final savedAltKey = 'event_${eventId}_elevation_gain';
+      _totalDistance = prefs.getDouble(savedDistKey) ?? 0.0;
+      _elevationGain = prefs.getDouble(savedAltKey) ?? 0.0;
+
       notifyListeners();
 
       print('PROV: 📡 [DEBUG] Step 1: Connecting MQTT...');
@@ -68,39 +89,46 @@ class TrackingProvider extends ChangeNotifier {
         eventId: eventId, 
         userId: userId,
         category: category,
-        onPositionUpdate: (pos) {
+        onPositionUpdate: (pos) async {
           final newPos = DashlyLatLng(pos.latitude, pos.longitude);
+          
+          // Calculate distance delta using Haversine
+          if (_lastGpsPosition != null) {
+            double distanceInMeters = Geolocator.distanceBetween(
+              _lastGpsPosition!.latitude,
+              _lastGpsPosition!.longitude,
+              pos.latitude,
+              pos.longitude,
+            );
+            // Filter noise < 1m
+            if (distanceInMeters >= 1.0) {
+              _totalDistance += (distanceInMeters / 1000.0);
+              // Save to SharedPreferences for persistence across restarts
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setDouble(savedDistKey, _totalDistance);
+            }
+          }
+          _lastGpsPosition = pos;
+
+          // Calculate elevation gain
+          if (pos.altitude != 0) {
+            if (_lastAltitude != -9999.0) {
+              double altDiff = pos.altitude - _lastAltitude;
+              if (altDiff > 1.0) { // threshold 1m
+                _elevationGain += altDiff;
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.setDouble(savedAltKey, _elevationGain);
+              }
+            }
+            _lastAltitude = pos.altitude;
+          }
+
           _currentPosition = newPos;
           _currentSpeed = pos.speed * 3.6; // m/s to km/h
           notifyListeners();
         },
       );
       
-      // Start polling live stats every 5 seconds
-      _statsTimer = Timer.periodic(const Duration(seconds: 5), (timer) async {
-        if (!_isTracking) {
-          timer.cancel();
-          return;
-        }
-        final stats = await EventService().getLiveStats(eventId);
-        if (stats != null) {
-          _currentRank = stats['rank'] ?? 0;
-          _progressPercentage = (stats['progressPercentage'] ?? 0.0).toDouble();
-          _totalDistance = (stats['distanceCovered'] ?? 0.0).toDouble() / 1000.0; // from m to km
-          _checkpointsCompleted = stats['checkpointsCompleted'] ?? 0;
-          
-          // Auto-unfreeze if the dashboard cleared our FROZEN state
-          if (_isSosTriggered && stats['participantState'] != null && stats['participantState'] != 'FROZEN') {
-            print('PROV: 🔓 [DEBUG] Dashboard unfroze participant. Clearing SOS lock.');
-            _isSosTriggered = false;
-            _locationService.isFrozen = false;
-          }
-          
-          notifyListeners();
-        }
-      });
-      
-      // Let the LocationService drive the actual GPS tracking loop without UI listeners
       notifyListeners();
     } catch (e, stack) {
       print('PROV: 💥 [DEBUG] CRITICAL FAILURE in startTracking: $e');
@@ -112,14 +140,22 @@ class TrackingProvider extends ChangeNotifier {
 
   Future<void> stopTracking() async {
     print('PROV: 🛑 [DEBUG] stopTracking triggered');
-    _statsTimer?.cancel();
     _isTracking = false;
     _isSosTriggered = false;
     _locationService.isFrozen = false;
     _mqttService.setTrackingActive(false);
     _locationService.stopTracking();
     _mqttService.publishStatus('OFFLINE');
-    // Wait briefly to allow the TCP buffer to flush the OFFLINE message before disconnecting
+    _lastGpsPosition = null;
+    _lastAltitude = -9999.0;
+    
+    // Clear persistent distance state when race is officially stopped
+    final prefs = await SharedPreferences.getInstance();
+    final keys = prefs.getKeys().where((k) => k.startsWith('event_'));
+    for (var key in keys) {
+      await prefs.remove(key);
+    }
+
     await Future.delayed(const Duration(milliseconds: 500));
     _mqttService.disconnect();
     notifyListeners();
