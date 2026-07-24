@@ -34,6 +34,21 @@ class AltitudeChartWidget extends StatelessWidget {
 
     if (maxElev == 0 && minElev == double.infinity) return const SizedBox.shrink();
 
+    // Find current user's interpolated elevation along profile
+    double userElev = spots.isNotEmpty ? spots.first.y : 0;
+    int userSpotIndex = 0;
+    if (spots.isNotEmpty) {
+      double minDiff = (spots.first.x - currentDistanceMeters).abs();
+      for (int i = 0; i < spots.length; i++) {
+        double diff = (spots[i].x - currentDistanceMeters).abs();
+        if (diff < minDiff) {
+          minDiff = diff;
+          userElev = spots[i].y;
+          userSpotIndex = i;
+        }
+      }
+    }
+
     final List<VerticalLine> verticalLines = [
       VerticalLine(
         x: currentDistanceMeters,
@@ -84,7 +99,7 @@ class AltitudeChartWidget extends StatelessWidget {
       child: LineChart(
         LineChartData(
           minX: 0,
-          maxX: maxDist,
+          maxX: maxDist > 0 ? maxDist : 1000,
           minY: minElev - 10,
           maxY: maxElev + 10,
           gridData: FlGridData(
@@ -144,7 +159,21 @@ class AltitudeChartWidget extends StatelessWidget {
               color: context.dashlyColors.accent,
               barWidth: 2,
               isStrokeCapRound: true,
-              dotData: FlDotData(show: false),
+              showingIndicators: spots.isNotEmpty ? [userSpotIndex] : [],
+              dotData: FlDotData(
+                show: true,
+                checkToShowDot: (spot, barData) {
+                  return (spot.x - currentDistanceMeters).abs() < 50;
+                },
+                getDotPainter: (spot, percent, barData, index) {
+                  return FlDotCirclePainter(
+                    radius: 5,
+                    color: Colors.cyanAccent,
+                    strokeWidth: 2,
+                    strokeColor: Colors.white,
+                  );
+                },
+              ),
               belowBarData: BarAreaData(
                 show: true,
                 gradient: LinearGradient(
