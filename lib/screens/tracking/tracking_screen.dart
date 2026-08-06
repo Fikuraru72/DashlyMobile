@@ -14,13 +14,11 @@ import '../../widgets/altitude_chart_widget.dart';
 class TrackingScreen extends StatefulWidget {
   final int eventId;
   final String eventName;
-  final bool isMapMode;
 
   const TrackingScreen({
     super.key,
     required this.eventId,
     required this.eventName,
-    this.isMapMode = true,
   });
 
   @override
@@ -212,48 +210,15 @@ class _TrackingScreenState extends State<TrackingScreen> {
         backgroundColor: Colors.black,
         body: Stack(
           children: [
-            // 1. FULL-SCREEN MAP OR STATS-ONLY BATTERY SAVER BACKGROUND
+            // 1. FULL-SCREEN MAP
             Positioned.fill(
-              child: widget.isMapMode
-                  ? LiveMapWidget(
-                      currentPosition: tracker.currentPosition,
-                      routeGeojson: currentEvent?.routeGeojson,
-                      onControllerCreated: (controller) {
-                        _mapController = controller;
-                      },
-                    )
-                  : Container(
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Color(0xFF0F172A), Color(0xFF020617)],
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                        ),
-                      ),
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.bolt_rounded, size: 64, color: context.dashlyColors.accent.withValues(alpha: 0.6)),
-                            const SizedBox(height: 12),
-                            Text(
-                              "STATS-ONLY TRACKING MODE",
-                              style: TextStyle(
-                                color: context.dashlyColors.accent,
-                                fontWeight: FontWeight.w900,
-                                fontSize: 16,
-                                letterSpacing: 2,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              "Battery Saver Active • GPS Telemetry Broadcasting 100%",
-                              style: TextStyle(color: context.dashlyColors.textHint, fontSize: 12),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+              child: LiveMapWidget(
+                currentPosition: tracker.currentPosition,
+                routeGeojson: currentEvent?.routeGeojson,
+                onControllerCreated: (controller) {
+                  _mapController = controller;
+                },
+              ),
             ),
 
             // 2. TOP HEADER (Translucent Pill with Event Name & BIB Number shown ONCE)
@@ -277,24 +242,12 @@ class _TrackingScreenState extends State<TrackingScreen> {
             Positioned(
               left: 16,
               bottom: (_isMetricsPanelCollapsed ? 195 : 320) + MediaQuery.of(context).padding.bottom + 10,
-              child: Column(
-                children: [
-                  _buildMapActionButton(
-                    icon: Icons.explore_rounded,
-                    tooltip: "Reset North",
-                    onTap: () {
-                      _mapController?.animateCamera(CameraUpdate.bearingTo(0.0));
-                    },
-                  ),
-                  const SizedBox(height: 10),
-                  _buildMapActionButton(
-                    icon: Icons.my_location_rounded,
-                    tooltip: "Center Pointer",
-                    onTap: () {
-                      _mapController?.updateMyLocationTrackingMode(MyLocationTrackingMode.trackingCompass);
-                    },
-                  ),
-                ],
+              child: _buildMapActionButton(
+                icon: Icons.my_location_rounded,
+                tooltip: "Center Pointer",
+                onTap: () {
+                  _mapController?.updateMyLocationTrackingMode(MyLocationTrackingMode.trackingCompass);
+                },
               ),
             ),
 

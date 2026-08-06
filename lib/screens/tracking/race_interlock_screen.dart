@@ -6,6 +6,7 @@ import '../../providers/event_list_provider.dart';
 import '../../providers/event_provider.dart';
 import '../../theme/dashly_theme.dart';
 import 'tracking_screen.dart';
+import 'stats_tracking_screen.dart';
 
 /// ════════════════════════════════════════════════════════════════
 /// Race Interlock Screen — Double-Lock Security Gate
@@ -91,15 +92,25 @@ class _RaceInterlockScreenState extends State<RaceInterlockScreen>
     final eventProv = context.read<EventProvider>();
     eventProv.stopPolling();
 
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (context) => TrackingScreen(
-          eventId: widget.eventId,
-          eventName: widget.eventName,
-          isMapMode: isMapMode,
+    if (isMapMode) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => TrackingScreen(
+            eventId: widget.eventId,
+            eventName: widget.eventName,
+          ),
         ),
-      ),
-    );
+      );
+    } else {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => StatsTrackingScreen(
+            eventId: widget.eventId,
+            eventName: widget.eventName,
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _showTrackingModeDialog() async {
