@@ -38,6 +38,7 @@ class LiveMapWidget extends StatefulWidget {
 class _LiveMapWidgetState extends State<LiveMapWidget> {
   MapLibreMapController? _mapController;
   bool _styleLoaded = false;
+  bool _isRouteDrawn = false;
   double _currentBearing = 0.0;
 
   double _calculateBearing(double lat1, double lng1, double lat2, double lng2) {
@@ -53,6 +54,10 @@ class _LiveMapWidgetState extends State<LiveMapWidget> {
   @override
   void didUpdateWidget(LiveMapWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.routeGeojson != widget.routeGeojson || !_isRouteDrawn) {
+      _drawRoute();
+    }
+
     if (widget.currentPosition != null && oldWidget.currentPosition != null) {
       final lat1 = oldWidget.currentPosition!.latitude;
       final lng1 = oldWidget.currentPosition!.longitude;
@@ -128,6 +133,12 @@ class _LiveMapWidgetState extends State<LiveMapWidget> {
     try {
       final normalizedGeojson = _normalizeGeojson(widget.routeGeojson!);
 
+      // Remove previous layer & source if re-drawing
+      try {
+        await _mapController?.removeLayer("route-main-layer");
+        await _mapController?.removeSource("route-main");
+      } catch (_) {}
+
       await _mapController?.addSource(
         "route-main",
         GeojsonSourceProperties(
@@ -140,12 +151,13 @@ class _LiveMapWidgetState extends State<LiveMapWidget> {
         "route-main-layer",
         const LineLayerProperties(
           lineColor: '#8b5cf6',
-          lineWidth: 5.0,
+          lineWidth: 6.0,
           lineOpacity: 1.0,
           lineCap: 'round',
           lineJoin: 'round',
         ),
       );
+      _isRouteDrawn = true;
       print("🛣️ [LiveMapWidget] Route rendered successfully.");
     } catch (e) {
       print("⚠️ [LiveMapWidget] Failed to draw route: $e");
