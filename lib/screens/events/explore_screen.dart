@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../providers/event_list_provider.dart';
 import '../../providers/event_provider.dart';
 import '../../models/event_model.dart';
@@ -75,7 +76,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
       ),
       builder: (bottomSheetContext) {
         return Container(
-          height: MediaQuery.of(mainContext).size.height * 0.7,
+          height: MediaQuery.of(mainContext).size.height * 0.75,
           padding: const EdgeInsets.all(20),
           child: Column(
             children: [
@@ -102,10 +103,10 @@ class _ExploreScreenState extends State<ExploreScreen> {
               ),
               const SizedBox(height: 12),
               Text(
-                "Point your camera at an event QR code to join instantly.",
+                "Point your camera at an event QR code or upload from gallery.",
                 style: TextStyle(color: mainContext.dashlyColors.textSecondary, fontSize: 13),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
               Expanded(
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(16),
@@ -123,7 +124,6 @@ class _ExploreScreenState extends State<ExploreScreen> {
                               isProcessingScan = true;
                               scannerController.stop();
 
-                              // Show loading indicator
                               ScaffoldMessenger.of(mainContext).showSnackBar(
                                 const SnackBar(
                                   content: Row(
@@ -137,7 +137,6 @@ class _ExploreScreenState extends State<ExploreScreen> {
                                 ),
                               );
 
-                              // Join event via token
                               final token = rawValue.trim();
                               final eventProv = mainContext.read<EventProvider>();
                               final result = await eventProv.joinEventViaToken(token);
@@ -187,6 +186,82 @@ class _ExploreScreenState extends State<ExploreScreen> {
                   ),
                 ),
               ),
+              const SizedBox(height: 16),
+              // Option to upload image from gallery
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    final ImagePicker picker = ImagePicker();
+                    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+                    if (image != null) {
+                      final BarcodeCapture? capture = await scannerController.analyzeImage(image.path);
+                      if (capture != null && capture.barcodes.isNotEmpty) {
+                        final token = capture.barcodes.first.rawValue?.trim();
+                        if (token != null && token.isNotEmpty) {
+                          if (bottomSheetContext.mounted) Navigator.pop(bottomSheetContext);
+
+                          ScaffoldMessenger.of(mainContext).showSnackBar(
+                            const SnackBar(
+                              content: Row(
+                                children: [
+                                  SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
+                                  SizedBox(width: 12),
+                                  Text("Processing QR image..."),
+                                ],
+                              ),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+
+                          final eventProv = mainContext.read<EventProvider>();
+                          final result = await eventProv.joinEventViaToken(token);
+
+                          if (result != null && result['success'] == true) {
+                            final eventListProv = mainContext.read<EventListProvider>();
+                            await eventListProv.loadExploreEvents();
+                            await eventListProv.loadMyEventsForMerge();
+
+                            final eventIdInt = int.tryParse(result['eventId']?.toString() ?? '') ?? 0;
+                            final joinedEvent = eventListProv.getEventWithParticipantData(eventIdInt);
+
+                            if (joinedEvent != null && mainContext.mounted) {
+                              Navigator.push(
+                                mainContext,
+                                MaterialPageRoute(
+                                  builder: (_) => EventDetailScreen(event: joinedEvent),
+                                ),
+                              );
+                            }
+                          } else if (mainContext.mounted) {
+                            ScaffoldMessenger.of(mainContext).showSnackBar(
+                              SnackBar(
+                                content: Text(eventProv.errorMessage ?? 'Failed to join via QR image'),
+                                backgroundColor: mainContext.dashlyColors.error,
+                              ),
+                            );
+                          }
+                        }
+                      } else if (mainContext.mounted) {
+                        ScaffoldMessenger.of(mainContext).showSnackBar(
+                          SnackBar(
+                            content: const Text('No valid QR Code found in selected image'),
+                            backgroundColor: mainContext.dashlyColors.error,
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  icon: const Icon(Icons.photo_library_rounded, size: 20),
+                  label: const Text("UPLOAD FROM GALLERY", style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.0)),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: mainContext.dashlyColors.accent,
+                    side: BorderSide(color: mainContext.dashlyColors.accent),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                ),
+              ),
             ],
           ),
         );
@@ -206,15 +281,16 @@ class _ExploreScreenState extends State<ExploreScreen> {
         centerTitle: false,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.qr_code_scanner_rounded, color: context.dashlyColors.accent, size: 26),
-            tooltip: "Scan Event QR Code",
-            onPressed: () => _openQRScannerSheet(context),
-          ),
-          const SizedBox(width: 8),
-        ],
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _openQRScannerSheet(context),
+        backgroundColor: context.dashlyColors.accent,
+        foregroundColor: Colors.black,
+        elevation: 6,
+        icon: const Icon(Icons.qr_code_scanner_rounded, size: 22),
+        label: const Text("SCAN QR CODE", style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2, fontSize: 13)),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       body: Column(
         children: [
           // Search Bar

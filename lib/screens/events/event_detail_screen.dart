@@ -426,23 +426,41 @@ class EventDetailScreen extends StatelessWidget {
   }
 
   Widget _buildRouteInfo(BuildContext context, Event event) {
-    if (event.totalDistanceMeters == null && (event.altitudeProfile == null || event.altitudeProfile!.isEmpty)) {
-      return const SizedBox.shrink();
+    double totalDistanceKm = 0.0;
+    if (event.totalDistanceMeters != null && event.totalDistanceMeters! > 0) {
+      totalDistanceKm = event.totalDistanceMeters! / 1000.0;
+    } else if (event.routeGeojson != null) {
+      totalDistanceKm = _calculateGeojsonDistanceMeters(event.routeGeojson) / 1000.0;
     }
 
     double startElev = 0;
     double endElev = 0;
     double avgElev = 0;
-    
+    bool hasElevation = false;
+
     if (event.altitudeProfile != null && event.altitudeProfile!.isNotEmpty) {
+      hasElevation = true;
       startElev = (event.altitudeProfile!.first['elevation'] as num).toDouble();
       endElev = (event.altitudeProfile!.last['elevation'] as num).toDouble();
-      
+
       double sumElev = 0;
       for (var pt in event.altitudeProfile!) {
         sumElev += (pt['elevation'] as num).toDouble();
       }
       avgElev = sumElev / event.altitudeProfile!.length;
+    } else {
+      // Fallback: extract elevation from 3D coordinates in routeGeojson [lng, lat, ele]
+      final elevations = _extractGeojsonElevations(event.routeGeojson);
+      if (elevations.isNotEmpty) {
+        hasElevation = true;
+        startElev = elevations.first;
+        endElev = elevations.last;
+        avgElev = elevations.reduce((a, b) => a + b) / elevations.length;
+      }
+    }
+
+    if (totalDistanceKm <= 0 && !hasElevation) {
+      return const SizedBox.shrink();
     }
 
     return Column(
@@ -462,11 +480,11 @@ class EventDetailScreen extends StatelessWidget {
           ),
           child: Column(
             children: [
-              if (event.totalDistanceMeters != null)
-                _buildRouteInfoRow(context, Icons.straighten, "Total Distance", "${(event.totalDistanceMeters! / 1000).toStringAsFixed(2)} km"),
-              if (event.totalDistanceMeters != null && event.altitudeProfile != null)
+              if (totalDistanceKm > 0)
+                _buildRouteInfoRow(context, Icons.straighten, "Total Distance", "${totalDistanceKm.toStringAsFixed(2)} km"),
+              if (totalDistanceKm > 0 && hasElevation)
                 const Divider(height: 24, thickness: 1),
-              if (event.altitudeProfile != null && event.altitudeProfile!.isNotEmpty) ...[
+              if (hasElevation) ...[
                 _buildRouteInfoRow(context, Icons.trending_up, "Start Elevation", "${startElev.round()} m"),
                 const Divider(height: 24, thickness: 1),
                 _buildRouteInfoRow(context, Icons.flag_outlined, "End Elevation", "${endElev.round()} m"),
@@ -478,6 +496,80 @@ class EventDetailScreen extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  static double _haversineDistance(double lat1, double lon1, double lat2, double lon2) {
+    const R = 6371000.0;
+    final dLat = (lat2 - lat1) * (3.141592653589793 / 180.0);
+    final dLon = (lon2 - lon1) * (3.141592653589793 / 180.0);
+    final a = (sin(dLat / 2) * sin(dLat / 2)) +
+        (cos(lat1 * (3.141592653589793 / 180.0)) *
+            cos(lat2 * (3.141592653589793 / 180.0)) *
+            sin(dLon / 2) *
+            sin(dLon / 2));
+    final c = 2 * atan2(sqrt(a), sqrt(1 - a));
+    return R * c;
+  }
+
+  static double _calculateGeojsonDistanceMeters(Map<String, dynamic>? routeGeojson) {
+    if (routeGeojson == null) return 0.0;
+    List<dynamic> coords = [];
+    try {
+      if (routeGeojson['type'] == 'FeatureCollection' && routeGeojson['features'] != null) {
+        for (var f in routeGeojson['features']) {
+          final geom = f['geometry'];
+          if (geom != null && geom['type'] == 'LineString' && geom['coordinates'] is List) {
+            coords.addAll(geom['coordinates']);
+          } else if (geom != null && geom['type'] == 'MultiLineString' && geom['coordinates'] is List) {
+            for (var line in geom['coordinates']) {
+              if (line is List) coords.addAll(line);
+            }
+          }
+        }
+      } else if (routeGeojson['type'] == 'LineString' && routeGeojson['coordinates'] is List) {
+        coords = routeGeojson['coordinates'];
+      }
+    } catch (_) {}
+
+    if (coords.length < 2) return 0.0;
+    double total = 0.0;
+    for (int i = 0; i < coords.length - 1; i++) {
+      final p1 = coords[i];
+      final p2 = coords[i + 1];
+      if (p1 is List && p2 is List && p1.length >= 2 && p2.length >= 2) {
+        final lon1 = (p1[0] as num).toDouble();
+        final lat1 = (p1[1] as num).toDouble();
+        final lon2 = (p2[0] as num).toDouble();
+        final lat2 = (p2[1] as num).toDouble();
+        total += _haversineDistance(lat1, lon1, lat2, lon2);
+      }
+    }
+    return total;
+  }
+
+  static List<double> _extractGeojsonElevations(Map<String, dynamic>? routeGeojson) {
+    if (routeGeojson == null) return [];
+    List<double> elevations = [];
+    try {
+      List<dynamic> coords = [];
+      if (routeGeojson['type'] == 'FeatureCollection' && routeGeojson['features'] != null) {
+        for (var f in routeGeojson['features']) {
+          final geom = f['geometry'];
+          if (geom != null && geom['type'] == 'LineString' && geom['coordinates'] is List) {
+            coords.addAll(geom['coordinates']);
+          }
+        }
+      } else if (routeGeojson['type'] == 'LineString' && routeGeojson['coordinates'] is List) {
+        coords = routeGeojson['coordinates'];
+      }
+
+      for (var pt in coords) {
+        if (pt is List && pt.length >= 3) {
+          elevations.add((pt[2] as num).toDouble());
+        }
+      }
+    } catch (_) {}
+    return elevations;
   }
 
   Widget _buildRouteInfoRow(BuildContext context, IconData icon, String label, String value) {

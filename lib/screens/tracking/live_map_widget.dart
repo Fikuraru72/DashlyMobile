@@ -3,7 +3,6 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 import '../../core/utils/geo_utils.dart';
-import '../../theme/dashly_theme.dart';
 
 /// ════════════════════════════════════════════════════════════════
 /// Live Map Widget — MapLibre GL + MapTiler Dark Mode
@@ -39,19 +38,54 @@ class LiveMapWidget extends StatefulWidget {
 class _LiveMapWidgetState extends State<LiveMapWidget> {
   MapLibreMapController? _mapController;
   bool _styleLoaded = false;
+  double _currentBearing = 0.0;
+
+  double _calculateBearing(double lat1, double lng1, double lat2, double lng2) {
+    final dLng = (lng2 - lng1) * (pi / 180.0);
+    final phi1 = lat1 * (pi / 180.0);
+    final phi2 = lat2 * (pi / 180.0);
+    final y = sin(dLng) * cos(phi2);
+    final x = cos(phi1) * sin(phi2) - sin(phi1) * cos(phi2) * cos(dLng);
+    final bearing = atan2(y, x) * (180.0 / pi);
+    return (bearing + 360.0) % 360.0;
+  }
 
   @override
   void didUpdateWidget(LiveMapWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.currentPosition != null &&
-        (oldWidget.currentPosition?.latitude != widget.currentPosition?.latitude ||
-         oldWidget.currentPosition?.longitude != widget.currentPosition?.longitude)) {
+    if (widget.currentPosition != null && oldWidget.currentPosition != null) {
+      final lat1 = oldWidget.currentPosition!.latitude;
+      final lng1 = oldWidget.currentPosition!.longitude;
+      final lat2 = widget.currentPosition!.latitude;
+      final lng2 = widget.currentPosition!.longitude;
+
+      if (lat1 != lat2 || lng1 != lng2) {
+        // Compute bearing if moved > 0.5 meters
+        final dLat = (lat2 - lat1).abs();
+        final dLng = (lng2 - lng1).abs();
+        if (dLat > 0.000005 || dLng > 0.000005) {
+          _currentBearing = _calculateBearing(lat1, lng1, lat2, lng2);
+        }
+
+        _mapController?.animateCamera(
+          CameraUpdate.newCameraPosition(
+            CameraPosition(
+              target: LatLng(lat2, lng2),
+              zoom: 18.0,
+              tilt: 55.0,
+              bearing: _currentBearing,
+            ),
+          ),
+        );
+      }
+    } else if (widget.currentPosition != null) {
       _mapController?.animateCamera(
         CameraUpdate.newCameraPosition(
           CameraPosition(
             target: LatLng(widget.currentPosition!.latitude, widget.currentPosition!.longitude),
-            zoom: 17.0,
-            tilt: 50.0,
+            zoom: 18.0,
+            tilt: 55.0,
+            bearing: _currentBearing,
           ),
         ),
       );
@@ -139,7 +173,7 @@ class _LiveMapWidgetState extends State<LiveMapWidget> {
       onStyleLoadedCallback: _onStyleLoaded,
       trackCameraPosition: true,
       myLocationEnabled: true,
-      myLocationTrackingMode: MyLocationTrackingMode.trackingGPS,
+      myLocationTrackingMode: MyLocationTrackingMode.tracking,
       myLocationRenderMode: MyLocationRenderMode.compass,
       compassEnabled: false,
       attributionButtonMargins: const Point(-100, -100), // hide off-screen
