@@ -58,36 +58,31 @@ class _LiveMapWidgetState extends State<LiveMapWidget> {
       _drawRoute();
     }
 
-    if (widget.currentPosition != null && oldWidget.currentPosition != null) {
-      final lat1 = oldWidget.currentPosition!.latitude;
-      final lng1 = oldWidget.currentPosition!.longitude;
-      final lat2 = widget.currentPosition!.latitude;
-      final lng2 = widget.currentPosition!.longitude;
+    if (widget.currentPosition != null) {
+      final pos = widget.currentPosition!;
+      final oldPos = oldWidget.currentPosition;
 
-      if (lat1 != lat2 || lng1 != lng2) {
-        // Compute bearing if moved > 0.5 meters
-        final dLat = (lat2 - lat1).abs();
-        final dLng = (lng2 - lng1).abs();
-        if (dLat > 0.000005 || dLng > 0.000005) {
-          _currentBearing = _calculateBearing(lat1, lng1, lat2, lng2);
+      // Determine heading/bearing: prefer position.heading, fallback to movement vector calculation
+      if (pos.heading > 0) {
+        _currentBearing = pos.heading;
+      } else if (oldPos != null) {
+        final dLat = (pos.latitude - oldPos.latitude).abs();
+        final dLng = (pos.longitude - oldPos.longitude).abs();
+        if (dLat > 0.000003 || dLng > 0.000003) {
+          _currentBearing = _calculateBearing(
+            oldPos.latitude,
+            oldPos.longitude,
+            pos.latitude,
+            pos.longitude,
+          );
         }
-
-        _mapController?.animateCamera(
-          CameraUpdate.newCameraPosition(
-            CameraPosition(
-              target: LatLng(lat2, lng2),
-              zoom: 18.0,
-              tilt: 55.0,
-              bearing: _currentBearing,
-            ),
-          ),
-        );
       }
-    } else if (widget.currentPosition != null) {
+
+      // Smoothly animate camera to center position with calculated 3D bearing angle
       _mapController?.animateCamera(
         CameraUpdate.newCameraPosition(
           CameraPosition(
-            target: LatLng(widget.currentPosition!.latitude, widget.currentPosition!.longitude),
+            target: LatLng(pos.latitude, pos.longitude),
             zoom: 18.0,
             tilt: 55.0,
             bearing: _currentBearing,
@@ -177,16 +172,16 @@ class _LiveMapWidgetState extends State<LiveMapWidget> {
     return MapLibreMap(
       initialCameraPosition: CameraPosition(
         target: initialPos,
-        zoom: 17.0,
-        tilt: 50.0,
+        zoom: 18.0,
+        tilt: 55.0,
       ),
       styleString: styleUrl,
       onMapCreated: _onMapCreated,
       onStyleLoadedCallback: _onStyleLoaded,
       trackCameraPosition: true,
       myLocationEnabled: true,
-      myLocationTrackingMode: MyLocationTrackingMode.tracking,
-      myLocationRenderMode: MyLocationRenderMode.compass,
+      myLocationTrackingMode: MyLocationTrackingMode.trackingGPS,
+      myLocationRenderMode: MyLocationRenderMode.gps,
       compassEnabled: false,
       attributionButtonMargins: const Point(-100, -100), // hide off-screen
     );

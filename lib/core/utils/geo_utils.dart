@@ -5,12 +5,14 @@ import 'package:geolocator/geolocator.dart';
 class DashlyLatLng {
   final double latitude;
   final double longitude;
+  final double heading;
 
-  const DashlyLatLng(this.latitude, this.longitude);
+  const DashlyLatLng(this.latitude, this.longitude, {this.heading = 0.0});
 
   /// Helper to convert Geolocator Position to DashlyLatLng.
   factory DashlyLatLng.fromPosition(Position position) {
-    return DashlyLatLng(position.latitude, position.longitude);
+    final h = position.heading >= 0 ? position.heading : 0.0;
+    return DashlyLatLng(position.latitude, position.longitude, heading: h);
   }
 
   /// Calculates the distance to another coordinate using the Haversine Formula.
