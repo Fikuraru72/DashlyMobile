@@ -24,9 +24,14 @@ class TrackingProvider extends ChangeNotifier {
   Position? _lastGpsPosition;
   EventCategory _category = EventCategory.running;
 
+  int _movingSeconds = 0;
+  double _avgSpeed = 0.0; // in km/h
+  DateTime? _lastMovementTimestamp;
+
   bool get isTracking => _isTracking;
   double get currentSpeed => _currentSpeed;
   double get totalDistance => _totalDistance;
+  double get avgSpeed => _avgSpeed;
   double get elevationGain => _elevationGain;
   int get currentRank => _currentRank;
   int get totalParticipants => _totalParticipants;
@@ -64,6 +69,9 @@ class TrackingProvider extends ChangeNotifier {
       _isTracking = true;
       _isSosTriggered = false;
       _category = category;
+      _movingSeconds = 0;
+      _avgSpeed = 0.0;
+      _lastMovementTimestamp = null;
 
       // Load persistent distance from SharedPreferences if available
       final prefs = await SharedPreferences.getInstance();
@@ -89,10 +97,20 @@ class TrackingProvider extends ChangeNotifier {
         eventId: eventId, 
         userId: userId,
         category: category,
-        onPositionUpdate: (pos) async {
+        onPositionUpdate: (pos, {bool isPolling = false}) async {
           final newPos = DashlyLatLng(pos.latitude, pos.longitude);
+          final double speedKmH = pos.speed * 3.6;
+
+          // 1. FILTER: GPS Accuracy Filter (reject weak/drifted GPS samples > 15m)
+          if (pos.accuracy > 0 && pos.accuracy > 15.0) {
+            print('PROV: ⚠️ Skipping position update due to poor GPS accuracy (${pos.accuracy}m)');
+            _currentPosition = newPos;
+            _currentSpeed = speedKmH;
+            notifyListeners();
+            return;
+          }
           
-          // Calculate distance delta using Haversine
+          // 2. DISTANCE DELTA CALCULATION
           if (_lastGpsPosition != null) {
             double distanceInMeters = Geolocator.distanceBetween(
               _lastGpsPosition!.latitude,
@@ -100,15 +118,39 @@ class TrackingProvider extends ChangeNotifier {
               pos.latitude,
               pos.longitude,
             );
-            // Filter noise < 1m
-            if (distanceInMeters >= 1.0) {
-              _totalDistance += (distanceInMeters / 1000.0);
-              // Save to SharedPreferences for persistence across restarts
-              final prefs = await SharedPreferences.getInstance();
-              await prefs.setDouble(savedDistKey, _totalDistance);
+
+            // Filter out stationary noise (< 2.0m threshold OR speed < 0.5 km/h)
+            // Also skip distance update on heartbeat polling if delta is tiny
+            bool isMoving = speedKmH >= 0.5 || distanceInMeters >= 2.0;
+            if (isMoving && (!isPolling || distanceInMeters >= 3.0)) {
+              if (distanceInMeters >= 1.5) {
+                _totalDistance += (distanceInMeters / 1000.0);
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.setDouble(savedDistKey, _totalDistance);
+              }
             }
+
+            // Track active moving time
+            if (isMoving) {
+              if (_lastMovementTimestamp != null) {
+                final int deltaSec = pos.timestamp.difference(_lastMovementTimestamp!).inSeconds;
+                if (deltaSec > 0 && deltaSec < 30) {
+                  _movingSeconds += deltaSec;
+                }
+              }
+              _lastMovementTimestamp = pos.timestamp;
+            }
+          } else {
+            _lastMovementTimestamp = pos.timestamp;
           }
           _lastGpsPosition = pos;
+
+          // 3. AVG SPEED CALCULATION (Moving Time Based)
+          if (_movingSeconds > 0 && _totalDistance > 0) {
+            _avgSpeed = _totalDistance / (_movingSeconds / 3600.0);
+          } else if (_totalDistance > 0 && speedKmH > 0) {
+            _avgSpeed = speedKmH;
+          }
 
           // Calculate elevation gain
           if (pos.altitude != 0) {
@@ -124,7 +166,7 @@ class TrackingProvider extends ChangeNotifier {
           }
 
           _currentPosition = newPos;
-          _currentSpeed = pos.speed * 3.6; // m/s to km/h
+          _currentSpeed = speedKmH;
           notifyListeners();
         },
       );
@@ -148,6 +190,9 @@ class TrackingProvider extends ChangeNotifier {
     _mqttService.publishStatus('OFFLINE');
     _lastGpsPosition = null;
     _lastAltitude = -9999.0;
+    _movingSeconds = 0;
+    _avgSpeed = 0.0;
+    _lastMovementTimestamp = null;
     
     // Clear persistent distance state when race is officially stopped
     final prefs = await SharedPreferences.getInstance();

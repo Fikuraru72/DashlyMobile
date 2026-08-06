@@ -379,6 +379,17 @@ class EventDetailScreen extends StatelessWidget {
   }
 
   Widget _buildActionButton(BuildContext context, bool isJoined, EventStatus status) {
+    if (status == EventStatus.finished) {
+      return OutlinedButton(
+        onPressed: null,
+        style: OutlinedButton.styleFrom(
+          side: BorderSide(color: context.dashlyColors.textHint),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+        child: Text("DONE", style: TextStyle(color: context.dashlyColors.textHint, fontWeight: FontWeight.bold, letterSpacing: 1.5, fontSize: 16)),
+      );
+    }
+
     if (!isJoined) {
       return ElevatedButton(
         onPressed: () => _showJoinDialog(context),
@@ -387,52 +398,30 @@ class EventDetailScreen extends StatelessWidget {
           foregroundColor: Colors.black,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
-        child: const Text("JOIN EVENT", style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+        child: const Text("JOIN EVENT", style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5, fontSize: 16)),
       );
     }
 
-    if (status == EventStatus.idle) {
-      return OutlinedButton(
-        onPressed: null,
-        style: OutlinedButton.styleFrom(
-          side: BorderSide(color: context.dashlyColors.textHint),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        ),
-        child: Text("WAITING FOR EVENT TO START", style: TextStyle(color: context.dashlyColors.textHint, fontWeight: FontWeight.bold)),
-      );
-    }
-
-    if (status == EventStatus.start) {
-      return ElevatedButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => RaceInterlockScreen(
-                eventId: event.id,
-                eventName: event.name,
-                category: event.category == EventCategory.cycling ? 'CYCLING' : 'RUNNING',
-              ),
+    // Already registered -> Enter Race
+    return ElevatedButton(
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => RaceInterlockScreen(
+              eventId: event.id,
+              eventName: event.name,
+              category: event.category == EventCategory.cycling ? 'CYCLING' : 'RUNNING',
             ),
-          );
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: context.dashlyColors.accent,
-          foregroundColor: Colors.black,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        ),
-        child: const Text("ENTER RACE", style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5, fontSize: 16)),
-      );
-    }
-
-    // Finished
-    return OutlinedButton(
-      onPressed: null,
-      style: OutlinedButton.styleFrom(
-        side: BorderSide(color: context.dashlyColors.textHint),
+          ),
+        );
+      },
+      style: ElevatedButton.styleFrom(
+        backgroundColor: context.dashlyColors.accent,
+        foregroundColor: Colors.black,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
-      child: Text("EVENT HAS ENDED", style: TextStyle(color: context.dashlyColors.textHint, fontWeight: FontWeight.bold)),
+      child: const Text("ENTER RACE", style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5, fontSize: 16)),
     );
   }
 

@@ -12,20 +12,57 @@ class EventListProvider extends ChangeNotifier {
   bool _isLoadingExplore = false;
   bool get isLoadingExplore => _isLoadingExplore;
 
+  bool _isLoadingMore = false;
+  bool get isLoadingMore => _isLoadingMore;
+
+  int _page = 1;
+  bool _hasMore = true;
+  bool get hasMore => _hasMore;
+
   final EventService _eventService = EventService();
 
+  void _sortEventsDescending(List<Event> events) {
+    events.sort((a, b) => b.dateEvent.compareTo(a.dateEvent));
+  }
+
   Future<void> loadExploreEvents() async {
+    _page = 1;
+    _hasMore = true;
     _isLoadingExplore = true;
     notifyListeners();
     
     final events = await _eventService.getExploreEvents();
     if (events != null) {
+      _sortEventsDescending(events);
       _exploreEvents = events;
-      // Merge participant data from myEvents if available
       _mergeParticipantData();
     }
     
     _isLoadingExplore = false;
+    notifyListeners();
+  }
+
+  Future<void> loadMoreExploreEvents() async {
+    if (_isLoadingMore || !_hasMore) return;
+    _isLoadingMore = true;
+    notifyListeners();
+
+    _page++;
+    final moreEvents = await _eventService.getExploreEvents();
+    if (moreEvents != null && moreEvents.isNotEmpty) {
+      _sortEventsDescending(moreEvents);
+      // Filter out duplicates
+      for (final event in moreEvents) {
+        if (!_exploreEvents.any((e) => e.id == event.id)) {
+          _exploreEvents.add(event);
+        }
+      }
+      _mergeParticipantData();
+    } else {
+      _hasMore = false;
+    }
+
+    _isLoadingMore = false;
     notifyListeners();
   }
 

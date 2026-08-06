@@ -50,7 +50,7 @@ class LocationService {
     required int eventId, 
     required int userId,
     EventCategory category = EventCategory.running,
-    required void Function(Position) onPositionUpdate,
+    required void Function(Position pos, {bool isPolling}) onPositionUpdate,
   }) async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) throw Exception('Location services disabled.');
@@ -70,7 +70,7 @@ class LocationService {
         if (lastKnown != null) {
           print('📍 FAST LOCK: Found last known position');
           _lastPosition = lastKnown;
-          onPositionUpdate(lastKnown);
+          onPositionUpdate(lastKnown, isPolling: false);
           _publish(lastKnown, eventId, userId);
         }
       } catch (e) {
@@ -79,12 +79,11 @@ class LocationService {
 
       // Start the continuous stream
 
-
       _positionStream = _createPositionStream().listen(
         (Position position) {
           print('📍 RAW GPS HIT: Lat: ${position.latitude}, Lng: ${position.longitude}, isMocked: ${position.isMocked}, speed: ${position.speed}');
           _lastPosition = position;
-          onPositionUpdate(position);
+          onPositionUpdate(position, isPolling: false);
           _publish(position, eventId, userId);
         },
         onError: (e) => print('TRACKER: ❌ STREAM ERROR -> $e'),
@@ -106,7 +105,7 @@ class LocationService {
         
         print('💓 HEARTBEAT/POLL: Fetched explicit position: Lat: ${currentPos.latitude}, Lng: ${currentPos.longitude}');
         _lastPosition = currentPos;
-        onPositionUpdate(currentPos);
+        onPositionUpdate(currentPos, isPolling: true);
         _publish(currentPos, eventId, userId);
       } catch (e) {
         print('💓 HEARTBEAT/POLL: Failed to get current position, using last known. Error: $e');

@@ -43,8 +43,19 @@ class _LiveMapWidgetState extends State<LiveMapWidget> {
   @override
   void didUpdateWidget(LiveMapWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Removed manual _updatePosition call.
-    // MapLibre's myLocationTrackingMode natively handles camera tracking smoothly without locking the screen.
+    if (widget.currentPosition != null &&
+        (oldWidget.currentPosition?.latitude != widget.currentPosition?.latitude ||
+         oldWidget.currentPosition?.longitude != widget.currentPosition?.longitude)) {
+      _mapController?.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(
+            target: LatLng(widget.currentPosition!.latitude, widget.currentPosition!.longitude),
+            zoom: 17.0,
+            tilt: 50.0,
+          ),
+        ),
+      );
+    }
   }
 
   void _onMapCreated(MapLibreMapController controller) {
@@ -95,7 +106,7 @@ class _LiveMapWidgetState extends State<LiveMapWidget> {
         "route-main-layer",
         const LineLayerProperties(
           lineColor: '#8b5cf6',
-          lineWidth: 4.0,
+          lineWidth: 5.0,
           lineOpacity: 1.0,
           lineCap: 'round',
           lineJoin: 'round',
@@ -120,14 +131,15 @@ class _LiveMapWidgetState extends State<LiveMapWidget> {
     return MapLibreMap(
       initialCameraPosition: CameraPosition(
         target: initialPos,
-        zoom: 15.0,
+        zoom: 17.0,
+        tilt: 50.0,
       ),
       styleString: styleUrl,
       onMapCreated: _onMapCreated,
       onStyleLoadedCallback: _onStyleLoaded,
       trackCameraPosition: true,
       myLocationEnabled: true,
-      myLocationTrackingMode: MyLocationTrackingMode.tracking,
+      myLocationTrackingMode: MyLocationTrackingMode.trackingGPS,
       myLocationRenderMode: MyLocationRenderMode.compass,
       compassEnabled: false,
       attributionButtonMargins: const Point(-100, -100), // hide off-screen

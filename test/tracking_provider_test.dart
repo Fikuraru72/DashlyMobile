@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dashly_mobile/providers/tracking_provider.dart';
 import 'package:dashly_mobile/services/mqtt_service.dart';
 import 'package:dashly_mobile/services/location_service.dart';
@@ -10,12 +11,21 @@ import 'package:dashly_mobile/core/utils/geo_utils.dart';
 class MockMqttService extends Mock implements MqttService {}
 class MockLocationService extends Mock implements LocationService {}
 
+typedef PositionCallback = void Function(Position pos, {bool isPolling});
+void _dummyCallback(Position pos, {bool isPolling = false}) {}
+
 void main() {
   late MockMqttService mockMqttService;
   late MockLocationService mockLocationService;
   late TrackingProvider trackingProvider;
 
+  setUpAll(() {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    registerFallbackValue(_dummyCallback);
+  });
+
   setUp(() {
+    SharedPreferences.setMockInitialValues({});
     mockMqttService = MockMqttService();
     mockLocationService = MockLocationService();
 

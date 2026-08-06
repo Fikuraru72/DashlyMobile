@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../providers/event_list_provider.dart';
+import '../../providers/event_provider.dart';
 import '../../models/event_model.dart';
 import '../../theme/dashly_theme.dart';
 import 'event_detail_screen.dart';
@@ -15,12 +17,14 @@ class ExploreScreen extends StatefulWidget {
 
 class _ExploreScreenState extends State<ExploreScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   String _searchQuery = '';
   EventStatus? _selectedFilter; // null means 'All'
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<EventListProvider>();
       provider.loadExploreEvents();
@@ -31,7 +35,17 @@ class _ExploreScreenState extends State<ExploreScreen> {
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      final provider = context.read<EventListProvider>();
+      if (!provider.isLoadingMore && provider.hasMore) {
+        provider.loadMoreExploreEvents();
+      }
+    }
   }
 
   List<Event> _filterEvents(List<Event> events) {
@@ -48,6 +62,138 @@ class _ExploreScreenState extends State<ExploreScreen> {
     }).toList();
   }
 
+  void _openQRScannerSheet(BuildContext mainContext) {
+    final MobileScannerController scannerController = MobileScannerController();
+    bool isProcessingScan = false;
+
+    showModalBottomSheet(
+      context: mainContext,
+      isScrollControlled: true,
+      backgroundColor: Colors.black,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (bottomSheetContext) {
+        return Container(
+          height: MediaQuery.of(mainContext).size.height * 0.7,
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "SCAN EVENT QR CODE",
+                    style: TextStyle(
+                      color: mainContext.dashlyColors.textPrimary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close, color: mainContext.dashlyColors.textHint),
+                    onPressed: () {
+                      scannerController.dispose();
+                      Navigator.pop(bottomSheetContext);
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                "Point your camera at an event QR code to join instantly.",
+                style: TextStyle(color: mainContext.dashlyColors.textSecondary, fontSize: 13),
+              ),
+              const SizedBox(height: 20),
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      MobileScanner(
+                        controller: scannerController,
+                        onDetect: (capture) async {
+                          if (isProcessingScan) return;
+                          final List<Barcode> barcodes = capture.barcodes;
+                          for (final barcode in barcodes) {
+                            final String? rawValue = barcode.rawValue;
+                            if (rawValue != null && rawValue.isNotEmpty) {
+                              isProcessingScan = true;
+                              scannerController.stop();
+
+                              // Show loading indicator
+                              ScaffoldMessenger.of(mainContext).showSnackBar(
+                                const SnackBar(
+                                  content: Row(
+                                    children: [
+                                      SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
+                                      SizedBox(width: 12),
+                                      Text("Processing QR Code..."),
+                                    ],
+                                  ),
+                                  duration: Duration(seconds: 2),
+                                ),
+                              );
+
+                              // Join event via token
+                              final token = rawValue.trim();
+                              final eventProv = mainContext.read<EventProvider>();
+                              final result = await eventProv.joinEventViaToken(token);
+
+                              if (!mainContext.mounted) return;
+                              Navigator.pop(bottomSheetContext);
+
+                              if (result != null && result['success'] == true) {
+                                final eventListProv = mainContext.read<EventListProvider>();
+                                await eventListProv.loadExploreEvents();
+                                await eventListProv.loadMyEventsForMerge();
+
+                                final eventIdInt = int.tryParse(result['eventId']?.toString() ?? '') ?? 0;
+                                final joinedEvent = eventListProv.getEventWithParticipantData(eventIdInt);
+
+                                if (joinedEvent != null) {
+                                  Navigator.push(
+                                    mainContext,
+                                    MaterialPageRoute(
+                                      builder: (_) => EventDetailScreen(event: joinedEvent),
+                                    ),
+                                  );
+                                }
+                              } else {
+                                ScaffoldMessenger.of(mainContext).showSnackBar(
+                                  SnackBar(
+                                    content: Text(eventProv.errorMessage ?? 'Invalid QR Code or failed to join event'),
+                                    backgroundColor: mainContext.dashlyColors.error,
+                                  ),
+                                );
+                              }
+                              break;
+                            }
+                          }
+                        },
+                      ),
+                      // QR Target Reticle Overlay
+                      Container(
+                        width: 200,
+                        height: 200,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: mainContext.dashlyColors.accent, width: 3),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<EventListProvider>();
@@ -60,6 +206,14 @@ class _ExploreScreenState extends State<ExploreScreen> {
         centerTitle: false,
         backgroundColor: Colors.transparent,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.qr_code_scanner_rounded, color: context.dashlyColors.accent, size: 26),
+            tooltip: "Scan Event QR Code",
+            onPressed: () => _openQRScannerSheet(context),
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: Column(
         children: [
@@ -149,9 +303,18 @@ class _ExploreScreenState extends State<ExploreScreen> {
                             ],
                           )
                         : ListView.builder(
+                            controller: _scrollController,
                             padding: const EdgeInsets.symmetric(horizontal: 20),
-                            itemCount: filteredEvents.length,
+                            itemCount: filteredEvents.length + (provider.isLoadingMore ? 1 : 0),
                             itemBuilder: (context, index) {
+                              if (index == filteredEvents.length) {
+                                return const Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 16),
+                                  child: Center(
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  ),
+                                );
+                              }
                               return _buildEventCard(context, filteredEvents[index]);
                             },
                           ),
@@ -249,8 +412,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
                         Icon(Icons.people_alt_rounded, size: 14, color: context.dashlyColors.accent),
                         const SizedBox(width: 6),
                         Text(
-                          "${event.currentCount}/${event.maxParticipants}",
-                          style: TextStyle(color: context.dashlyColors.accent, fontWeight: FontWeight.bold, fontSize: 13),
+                          "${event.currentCount} / ${event.maxParticipants}",
+                          style: TextStyle(color: context.dashlyColors.accent, fontSize: 13, fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
@@ -265,47 +428,51 @@ class _ExploreScreenState extends State<ExploreScreen> {
   }
 
   Widget _buildStatusBadge(BuildContext context, EventStatus status) {
-    Color color;
+    Color bg;
+    Color fg;
     String label;
+
     switch (status) {
       case EventStatus.start:
-        color = context.dashlyColors.accent;
-        label = "IN PROGRESS";
-        break;
-      case EventStatus.finished:
-        color = Colors.grey;
-        label = "FINISHED";
+        bg = context.dashlyColors.accent;
+        fg = Colors.black;
+        label = "LIVE NOW";
         break;
       case EventStatus.idle:
-        color = Colors.blueAccent;
+        bg = context.dashlyColors.surfaceLight;
+        fg = context.dashlyColors.textSecondary;
         label = "UPCOMING";
+        break;
+      case EventStatus.finished:
+        bg = Colors.black45;
+        fg = context.dashlyColors.textHint;
+        label = "FINISHED";
         break;
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.2),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color),
+        color: bg,
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
         label,
-        style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold),
+        style: TextStyle(color: fg, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1),
       ),
     );
   }
 
   Widget _buildBannerImage(BuildContext context, String? base64String) {
     if (base64String == null || base64String.isEmpty) {
-      return Center(child: Icon(Icons.map_rounded, color: context.dashlyColors.textHint.withValues(alpha: 0.2), size: 120));
+      return Icon(Icons.map_rounded, color: context.dashlyColors.textHint.withOpacity(0.2), size: 64);
     }
     try {
       final cleanBase64 = base64String.split(',').last.replaceAll(RegExp(r'\s+'), '');
       final bytes = const Base64Decoder().convert(cleanBase64);
       return Image.memory(bytes, fit: BoxFit.cover, width: double.infinity, height: double.infinity);
     } catch (e) {
-      return Center(child: Icon(Icons.broken_image_rounded, color: context.dashlyColors.error.withValues(alpha: 0.5), size: 120));
+      return Icon(Icons.broken_image_rounded, color: context.dashlyColors.error.withOpacity(0.5), size: 64);
     }
   }
 }

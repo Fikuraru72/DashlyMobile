@@ -14,11 +14,13 @@ import '../../widgets/altitude_chart_widget.dart';
 class TrackingScreen extends StatefulWidget {
   final int eventId;
   final String eventName;
+  final bool isMapMode;
 
   const TrackingScreen({
     super.key,
     required this.eventId,
     required this.eventName,
+    this.isMapMode = true,
   });
 
   @override
@@ -34,6 +36,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
   bool _isSosLongPressing = false;
   double _sosProgress = 0.0;
   Timer? _sosTimer;
+  bool _isMetricsPanelCollapsed = false;
 
   @override
   void initState() {
@@ -209,15 +212,48 @@ class _TrackingScreenState extends State<TrackingScreen> {
         backgroundColor: Colors.black,
         body: Stack(
           children: [
-            // 1. FULL-SCREEN MAP
+            // 1. FULL-SCREEN MAP OR STATS-ONLY BATTERY SAVER BACKGROUND
             Positioned.fill(
-              child: LiveMapWidget(
-                currentPosition: tracker.currentPosition,
-                routeGeojson: currentEvent?.routeGeojson,
-                onControllerCreated: (controller) {
-                  _mapController = controller;
-                },
-              ),
+              child: widget.isMapMode
+                  ? LiveMapWidget(
+                      currentPosition: tracker.currentPosition,
+                      routeGeojson: currentEvent?.routeGeojson,
+                      onControllerCreated: (controller) {
+                        _mapController = controller;
+                      },
+                    )
+                  : Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Color(0xFF0F172A), Color(0xFF020617)],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
+                      ),
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.bolt_rounded, size: 64, color: context.dashlyColors.accent.withValues(alpha: 0.6)),
+                            const SizedBox(height: 12),
+                            Text(
+                              "STATS-ONLY TRACKING MODE",
+                              style: TextStyle(
+                                color: context.dashlyColors.accent,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 16,
+                                letterSpacing: 2,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              "Battery Saver Active • GPS Telemetry Broadcasting 100%",
+                              style: TextStyle(color: context.dashlyColors.textHint, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
             ),
 
             // 2. TOP HEADER (Translucent Pill with Event Name & BIB Number shown ONCE)
@@ -228,10 +264,19 @@ class _TrackingScreenState extends State<TrackingScreen> {
               child: _buildHeaderPill(tracker, currentEvent),
             ),
 
-            // 3. MAP CONTROLS (Left Floating Buttons - Docked neatly above bottom panel)
+            // 3. DOCKED BOTTOM PANEL (STATISTIK - MENEMPEL DI BAWAH)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: _buildDockedBottomPanel(tracker, currentEvent),
+            ),
+
+            // 4. MAP CONTROLS - LEFT SIDE (Reset North & Center Pointer)
+            // Rendered AFTER bottom panel so they appear ON TOP (higher z-order)
             Positioned(
               left: 16,
-              bottom: 300,
+              bottom: (_isMetricsPanelCollapsed ? 195 : 320) + MediaQuery.of(context).padding.bottom + 10,
               child: Column(
                 children: [
                   _buildMapActionButton(
@@ -241,7 +286,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
                       _mapController?.animateCamera(CameraUpdate.bearingTo(0.0));
                     },
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
                   _buildMapActionButton(
                     icon: Icons.my_location_rounded,
                     tooltip: "Center Pointer",
@@ -253,12 +298,29 @@ class _TrackingScreenState extends State<TrackingScreen> {
               ),
             ),
 
-            // 4. DOCKED BOTTOM PANEL (STATISTIK - MENEMPEL DI BAWAH)
+            // 5. MAP CONTROLS - RIGHT SIDE (Zoom In & Zoom Out)
             Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: _buildDockedBottomPanel(tracker, currentEvent),
+              right: 16,
+              bottom: (_isMetricsPanelCollapsed ? 195 : 320) + MediaQuery.of(context).padding.bottom + 10,
+              child: Column(
+                children: [
+                  _buildMapActionButton(
+                    icon: Icons.add_rounded,
+                    tooltip: "Zoom In",
+                    onTap: () {
+                      _mapController?.animateCamera(CameraUpdate.zoomIn());
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  _buildMapActionButton(
+                    icon: Icons.remove_rounded,
+                    tooltip: "Zoom Out",
+                    onTap: () {
+                      _mapController?.animateCamera(CameraUpdate.zoomOut());
+                    },
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -428,15 +490,19 @@ class _TrackingScreenState extends State<TrackingScreen> {
 
   Widget _buildDockedBottomPanel(TrackingProvider tracker, dynamic currentEvent) {
     final double elapsedHours = _stopwatch.elapsed.inSeconds / 3600.0;
-    final double avgSpeed = elapsedHours > 0 ? (tracker.totalDistance / elapsedHours) : 0.0;
+    final double avgSpeed = tracker.avgSpeed > 0
+        ? tracker.avgSpeed
+        : (elapsedHours > 0 ? (tracker.totalDistance / elapsedHours) : 0.0);
     final altitudeProfile = _getEffectiveAltitudeProfile(currentEvent);
 
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
       padding: EdgeInsets.only(
-        top: 20,
+        top: 14,
         left: 20,
         right: 20,
-        bottom: MediaQuery.of(context).padding.bottom + 16,
+        bottom: MediaQuery.of(context).padding.bottom + 14,
       ),
       decoration: BoxDecoration(
         color: context.dashlyColors.surface,
@@ -455,70 +521,154 @@ class _TrackingScreenState extends State<TrackingScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // PageView Slider Content
-          SizedBox(
-            height: 145,
-            child: PageView(
-              controller: _pageController,
-              onPageChanged: (idx) {
-                setState(() => _currentPage = idx);
-              },
-              children: [
-                // PAGE 1: 6 Metrik Utama (Grid)
-                _buildMetricsGrid(tracker, avgSpeed),
-
-                // PAGE 2: Altitude Chart (Multi-Participant)
-                if (altitudeProfile.isNotEmpty)
-                  AltitudeChartWidget(
-                    altitudeProfile: altitudeProfile,
-                    currentDistanceMeters: tracker.totalDistance * 1000,
-                    otherRunners: tracker.otherRunners,
-                  )
-                else
-                  const Center(
-                    child: Text("No Altitude Profile Available", style: TextStyle(color: Colors.grey)),
-                  ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 10),
-
-          // Page Indicator Dots & Slide Text
+          // Header Row with Hide/Show Toggle Button
           Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                width: 6,
-                height: 6,
-                decoration: BoxDecoration(
-                  color: _currentPage == 0 ? context.dashlyColors.accent : Colors.grey.withValues(alpha: 0.4),
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 6),
-              Container(
-                width: 6,
-                height: 6,
-                decoration: BoxDecoration(
-                  color: _currentPage == 1 ? context.dashlyColors.accent : Colors.grey.withValues(alpha: 0.4),
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 8),
               Text(
-                _currentPage == 0 ? "SLIDE FOR CHART ➔" : "⬅ SLIDE FOR METRICS",
+                _isMetricsPanelCollapsed ? "RACE TELEMETRY (COMPACT)" : "RACE TELEMETRY",
                 style: TextStyle(
-                  color: context.dashlyColors.textHint,
-                  fontSize: 9,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.0,
+                  color: context.dashlyColors.accent,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              InkWell(
+                onTap: () {
+                  setState(() {
+                    _isMetricsPanelCollapsed = !_isMetricsPanelCollapsed;
+                  });
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: context.dashlyColors.divider.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _isMetricsPanelCollapsed
+                            ? Icons.keyboard_arrow_up_rounded
+                            : Icons.keyboard_arrow_down_rounded,
+                        color: context.dashlyColors.textPrimary,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        _isMetricsPanelCollapsed ? "EXPAND" : "COMPACT",
+                        style: TextStyle(
+                          color: context.dashlyColors.textPrimary,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
+
+          // If Expanded: Show PageView & Indicators
+          if (!_isMetricsPanelCollapsed) ...[
+            SizedBox(
+              height: 145,
+              child: PageView(
+                controller: _pageController,
+                onPageChanged: (idx) {
+                  setState(() => _currentPage = idx);
+                },
+                children: [
+                  // PAGE 1: 6 Metrik Utama (Grid)
+                  _buildMetricsGrid(tracker, avgSpeed),
+
+                  // PAGE 2: Altitude Chart (Multi-Participant)
+                  if (altitudeProfile.isNotEmpty)
+                    AltitudeChartWidget(
+                      altitudeProfile: altitudeProfile,
+                      currentDistanceMeters: tracker.totalDistance * 1000,
+                      otherRunners: tracker.otherRunners,
+                    )
+                  else
+                    const Center(
+                      child: Text("No Altitude Profile Available", style: TextStyle(color: Colors.grey)),
+                    ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 10),
+
+            // Page Indicator Dots & Slide Text
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: _currentPage == 0 ? context.dashlyColors.accent : Colors.grey.withValues(alpha: 0.4),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: _currentPage == 1 ? context.dashlyColors.accent : Colors.grey.withValues(alpha: 0.4),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  _currentPage == 0 ? "SLIDE FOR CHART ➔" : "⬅ SLIDE FOR METRICS",
+                  style: TextStyle(
+                    color: context.dashlyColors.textHint,
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 14),
+          ] else ...[
+            // Compact 1-row metrics view when panel is shrunk (Mengecil)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              margin: const EdgeInsets.only(bottom: 14),
+              decoration: BoxDecoration(
+                color: context.dashlyColors.background.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: context.dashlyColors.divider.withValues(alpha: 0.3),
+                ),
+              ),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildCompactMetric("TIME", _formatDuration(_stopwatch.elapsed), ""),
+                    _buildCompactDivider(),
+                    _buildCompactMetric("DIST", tracker.totalDistance.toStringAsFixed(2), "km"),
+                    _buildCompactDivider(),
+                    _buildCompactMetric("SPD", tracker.currentSpeed.toStringAsFixed(1), "km/h"),
+                    _buildCompactDivider(),
+                    _buildCompactMetric("AVG", avgSpeed.toStringAsFixed(1), "km/h"),
+                  ],
+                ),
+              ),
+            ),
+          ],
 
           // ACTION BUTTONS ROW (SOS & START/STOP RACE)
           Row(
@@ -664,6 +814,61 @@ class _TrackingScreenState extends State<TrackingScreen> {
           ],
         ),
       ],
+    );
+  }
+
+  Widget _buildCompactMetric(String label, String value, String unit) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: context.dashlyColors.textHint,
+              fontSize: 8,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.8,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w900,
+                  color: context.dashlyColors.textPrimary,
+                  fontFamily: 'monospace',
+                ),
+              ),
+              if (unit.isNotEmpty) ...[
+                const SizedBox(width: 2),
+                Text(
+                  unit,
+                  style: TextStyle(
+                    fontSize: 8,
+                    color: context.dashlyColors.textHint,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompactDivider() {
+    return Container(
+      width: 1,
+      height: 28,
+      color: context.dashlyColors.divider.withValues(alpha: 0.3),
     );
   }
 }

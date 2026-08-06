@@ -63,11 +63,17 @@ class _RaceInterlockScreenState extends State<RaceInterlockScreen>
       duration: const Duration(milliseconds: 800),
     )..repeat(reverse: true);
 
-    // Start polling event status
+    // Start polling event status & autofill BIB if available
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final eventProv = context.read<EventProvider>();
       eventProv.fetchEvent(widget.eventId);
       eventProv.startPolling(widget.eventId);
+
+      final eventListProv = context.read<EventListProvider>();
+      final enrichedEvent = eventListProv.getEventWithParticipantData(widget.eventId);
+      if (enrichedEvent?.bibNumber != null && enrichedEvent!.bibNumber!.isNotEmpty) {
+        _bibController.text = enrichedEvent.bibNumber!;
+      }
     });
   }
 
@@ -79,6 +85,138 @@ class _RaceInterlockScreenState extends State<RaceInterlockScreen>
     _bibController.dispose();
     context.read<EventProvider>().stopPolling();
     super.dispose();
+  }
+
+  void _startTracking({required bool isMapMode}) {
+    final eventProv = context.read<EventProvider>();
+    eventProv.stopPolling();
+
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => TrackingScreen(
+          eventId: widget.eventId,
+          eventName: widget.eventName,
+          isMapMode: isMapMode,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showTrackingModeDialog() async {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: context.dashlyColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return Container(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "SELECT TRACKING MODE",
+                style: TextStyle(
+                  color: context.dashlyColors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                "Choose how you want to track your race progress:",
+                style: TextStyle(color: context.dashlyColors.textSecondary, fontSize: 13),
+              ),
+              const SizedBox(height: 20),
+
+              // MODE 1: MAP MODE
+              InkWell(
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _startTracking(isMapMode: true);
+                },
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: context.dashlyColors.accent.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: context.dashlyColors.accent),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.map_rounded, color: context.dashlyColors.accent, size: 32),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "TRACKING WITH MAP",
+                              style: TextStyle(color: context.dashlyColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 14),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              "Interactive 3D navigation map with route & live position.",
+                              style: TextStyle(color: context.dashlyColors.textSecondary, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(Icons.arrow_forward_ios_rounded, color: context.dashlyColors.accent, size: 16),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // MODE 2: STATS ONLY (BATTERY SAVER)
+              InkWell(
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _startTracking(isMapMode: false);
+                },
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: context.dashlyColors.surfaceLight,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: context.dashlyColors.divider),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.bolt_rounded, color: Colors.orangeAccent, size: 32),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "TRACKING WITHOUT MAP (STATS ONLY)",
+                              style: TextStyle(color: context.dashlyColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 14),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              "Battery saver mode. Displays metrics & altitude charts.",
+                              style: TextStyle(color: context.dashlyColors.textSecondary, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(Icons.arrow_forward_ios_rounded, color: context.dashlyColors.textHint, size: 16),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _verifyAndStartTracking() async {
@@ -99,26 +237,7 @@ class _RaceInterlockScreenState extends State<RaceInterlockScreen>
       setState(() => _isProcessing = false);
 
       if (result['success'] == true || (result['message'] != null && result['message'].toString().toLowerCase().contains('already verified'))) {
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result['message'] ?? 'Berhasil memverifikasi BIB!'), 
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-
-        final eventProv = context.read<EventProvider>();
-        eventProv.stopPolling();
-
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (context) => TrackingScreen(
-              eventId: widget.eventId,
-              eventName: widget.eventName,
-            ),
-          ),
-        );
+        await _showTrackingModeDialog();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(result['message'] ?? 'Invalid BIB number'), backgroundColor: context.dashlyColors.error),
