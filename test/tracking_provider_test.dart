@@ -6,7 +6,6 @@ import 'package:dashly_mobile/providers/tracking_provider.dart';
 import 'package:dashly_mobile/services/mqtt_service.dart';
 import 'package:dashly_mobile/services/location_service.dart';
 import 'package:dashly_mobile/models/event_model.dart';
-import 'package:dashly_mobile/core/utils/geo_utils.dart';
 
 class MockMqttService extends Mock implements MqttService {}
 class MockLocationService extends Mock implements LocationService {}
