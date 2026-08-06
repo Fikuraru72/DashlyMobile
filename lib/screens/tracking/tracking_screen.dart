@@ -291,7 +291,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
                     icon: Icons.my_location_rounded,
                     tooltip: "Center Pointer",
                     onTap: () {
-                      _mapController?.updateMyLocationTrackingMode(MyLocationTrackingMode.trackingGPS);
+                      _mapController?.updateMyLocationTrackingMode(MyLocationTrackingMode.trackingCompass);
                     },
                   ),
                 ],

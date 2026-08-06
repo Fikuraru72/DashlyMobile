@@ -180,8 +180,8 @@ class _LiveMapWidgetState extends State<LiveMapWidget> {
       onStyleLoadedCallback: _onStyleLoaded,
       trackCameraPosition: true,
       myLocationEnabled: true,
-      myLocationTrackingMode: MyLocationTrackingMode.trackingGPS,
-      myLocationRenderMode: MyLocationRenderMode.gps,
+      myLocationTrackingMode: MyLocationTrackingMode.trackingCompass,
+      myLocationRenderMode: MyLocationRenderMode.compass,
       compassEnabled: false,
       attributionButtonMargins: const Point(-100, -100), // hide off-screen
     );
