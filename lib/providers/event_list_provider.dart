@@ -27,7 +27,7 @@ class EventListProvider extends ChangeNotifier {
 
   Future<void> loadExploreEvents({bool isSilent = false}) async {
     _page = 1;
-    _hasMore = true;
+    _hasMore = false; // GET /events/explore returns full list
     if (!isSilent && _exploreEvents.isEmpty) {
       _isLoadingExplore = true;
       notifyListeners();
@@ -53,11 +53,15 @@ class EventListProvider extends ChangeNotifier {
     final moreEvents = await _eventService.getExploreEvents();
     if (moreEvents != null && moreEvents.isNotEmpty) {
       _sortEventsDescending(moreEvents);
-      // Filter out duplicates
+      int newItemsAdded = 0;
       for (final event in moreEvents) {
         if (!_exploreEvents.any((e) => e.id == event.id)) {
           _exploreEvents.add(event);
+          newItemsAdded++;
         }
+      }
+      if (newItemsAdded == 0) {
+        _hasMore = false;
       }
       _mergeParticipantData();
     } else {

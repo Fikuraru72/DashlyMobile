@@ -28,7 +28,11 @@ class _ExploreScreenState extends State<ExploreScreen> {
     _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<EventListProvider>();
-      provider.loadExploreEvents();
+      if (provider.exploreEvents.isEmpty) {
+        provider.loadExploreEvents();
+      } else {
+        provider.loadExploreEvents(isSilent: true);
+      }
       provider.loadMyEventsForMerge();
     });
   }
@@ -41,7 +45,10 @@ class _ExploreScreenState extends State<ExploreScreen> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+    if (!_scrollController.hasClients) return;
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final currentScroll = _scrollController.position.pixels;
+    if (maxScroll > 0 && currentScroll >= maxScroll - 100) {
       final provider = context.read<EventListProvider>();
       if (!provider.isLoadingMore && provider.hasMore) {
         provider.loadMoreExploreEvents();
