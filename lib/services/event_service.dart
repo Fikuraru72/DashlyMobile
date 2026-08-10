@@ -61,6 +61,18 @@ class EventService {
     }
   }
 
+  /// Marks participant as FINISHED immediately for an event
+  Future<bool> finishParticipant(int eventId) async {
+    try {
+      final response = await _dio.post('/events/$eventId/finish-participant');
+      final responseData = response.data as Map<String, dynamic>;
+      return responseData['success'] == true;
+    } on DioException catch (e) {
+      print('EventService: Failed to finish participant for event $eventId: ${e.message}');
+      return false;
+    }
+  }
+
   /// Joins an event via a 6-character token via POST /events/join-via-token
   Future<Map<String, dynamic>> joinEventViaToken(String tokenCode) async {
     try {

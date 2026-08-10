@@ -687,6 +687,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
                             tracker.stopTracking();
                             _stopwatch.stop();
                             if (mounted) {
+                              context.read<EventProvider>().finishParticipant(widget.eventId);
                               Navigator.pushReplacement(
                                 context,
                                 MaterialPageRoute(

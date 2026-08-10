@@ -152,6 +152,15 @@ class EventProvider extends ChangeNotifier {
     return await _eventService.getParticipantTicket(eventId);
   }
 
+  /// Marks participant as FINISHED immediately and reloads myEvents state.
+  Future<bool> finishParticipant(int eventId) async {
+    final success = await _eventService.finishParticipant(eventId);
+    if (success) {
+      await loadMyEvents(isSilent: true);
+    }
+    return success;
+  }
+
   /// Stops polling event status.
   void stopPolling() {
     _pollTimer?.cancel();
