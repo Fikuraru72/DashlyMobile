@@ -52,10 +52,6 @@ class RaceSummaryScreen extends StatelessWidget {
         ? " • BIB #${currentEvent.bibNumber}"
         : "";
 
-    final rankDisplay = finalRank > 0
-        ? "#$finalRank${totalParticipants > 0 ? ' / $totalParticipants' : ''}"
-        : "-";
-
     return PopScope(
       canPop: true,
       child: Scaffold(
@@ -91,8 +87,8 @@ class RaceSummaryScreen extends StatelessWidget {
                 _buildHeroMetricsGrid(context),
                 const SizedBox(height: 16),
 
-                // 3. Performance Detail Card (Max Speed, Rank, Elev)
-                _buildPerformanceDetailCard(context, rankDisplay),
+                // 3. Performance Detail Card (Max Speed)
+                _buildPerformanceDetailCard(context),
                 const SizedBox(height: 16),
 
                 // 4. Interactive Route Map Preview if Available
@@ -293,52 +289,44 @@ class RaceSummaryScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildPerformanceDetailCard(BuildContext context, String rankDisplay) {
+  Widget _buildPerformanceDetailCard(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
       decoration: BoxDecoration(
         color: context.dashlyColors.surface,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: context.dashlyColors.divider),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
+      child: Column(
         children: [
-          _buildDetailStat(context, "MAX SPEED", "${maxSpeedKmh.toStringAsFixed(1)} km/h", Icons.speed_rounded),
-          _buildDivider(context),
-          _buildDetailStat(context, "FINAL RANK", rankDisplay, Icons.military_tech_rounded),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.speed_rounded, size: 16, color: context.dashlyColors.accent),
+              const SizedBox(width: 6),
+              Text(
+                "MAX SPEED ACHIEVED",
+                style: TextStyle(
+                  color: context.dashlyColors.textSecondary,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            "${maxSpeedKmh.toStringAsFixed(1)} KM/H",
+            style: TextStyle(
+              color: context.dashlyColors.textPrimary,
+              fontWeight: FontWeight.w900,
+              fontSize: 20,
+            ),
+          ),
         ],
       ),
-    );
-  }
-
-  Widget _buildDetailStat(BuildContext context, String label, String value, IconData icon) {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Icon(icon, size: 14, color: context.dashlyColors.accent),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: TextStyle(
-                color: context.dashlyColors.textSecondary,
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: TextStyle(
-            color: context.dashlyColors.textPrimary,
-            fontWeight: FontWeight.w900,
-            fontSize: 16,
-          ),
-        ),
-      ],
     );
   }
 
