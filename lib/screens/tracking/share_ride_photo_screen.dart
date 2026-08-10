@@ -319,20 +319,18 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
                       child: Container(
                         width: double.infinity,
                         height: 450,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(24),
-                          color: context.dashlyColors.surface,
-                          border: Border.all(color: context.dashlyColors.accent.withValues(alpha: 0.3)),
-                          boxShadow: DashlyTheme.glowShadow(
-                            color: Colors.black45,
-                            blur: 16,
-                          ),
+                        decoration: const BoxDecoration(
+                          color: Colors.black,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black45,
+                              blurRadius: 16,
+                            ),
+                          ],
                         ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(24),
-                          child: Stack(
-                            fit: StackFit.expand,
-                            children: [
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
                               // 1. Background Photo or Dark Canvas
                               if (_selectedImage != null)
                                 Image.file(
@@ -501,7 +499,6 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
                           ),
                         ),
                       ),
-                    ),
                     const SizedBox(height: 16),
 
                     // Photo Controls (Camera vs Gallery)
