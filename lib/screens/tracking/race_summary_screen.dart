@@ -164,7 +164,7 @@ class RaceSummaryScreen extends StatelessWidget {
                       backgroundColor: context.dashlyColors.surfaceLight,
                       foregroundColor: context.dashlyColors.textPrimary,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      borderSide: BorderSide(color: context.dashlyColors.divider),
+                      side: BorderSide(color: context.dashlyColors.divider),
                     ),
                     child: const Text(
                       "BACK TO MY EVENTS",
