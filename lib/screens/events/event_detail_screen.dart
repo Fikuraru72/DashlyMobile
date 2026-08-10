@@ -81,8 +81,10 @@ class EventDetailScreen extends StatelessWidget {
                     
                     if (result != null && result['success'] == true) {
                       Navigator.pop(dialogContext);
-                      // Force refresh events list so it shows as joined
+                      // Force refresh events list so it shows as joined across all screens
                       dialogContext.read<EventListProvider>().loadExploreEvents();
+                      dialogContext.read<EventListProvider>().loadMyEventsForMerge();
+                      dialogContext.read<EventProvider>().loadMyEvents();
                       // Show BIB number dialog
                       _showBibNumberDialog(dialogContext, result['bibNumber'] ?? 'N/A');
                     } else {

@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/event_provider.dart';
+import '../providers/event_list_provider.dart';
 import '../theme/dashly_theme.dart';
 import 'home/home_screen.dart';
 import 'events/explore_screen.dart';
@@ -30,6 +33,12 @@ class _MainNavigationState extends State<MainNavigation> {
   ];
 
   void _onItemTapped(int index) {
+    if (index == 0 || index == 2) {
+      context.read<EventProvider>().loadMyEvents();
+    } else if (index == 1) {
+      context.read<EventListProvider>().loadExploreEvents();
+      context.read<EventListProvider>().loadMyEventsForMerge();
+    }
     setState(() {
       _selectedIndex = index;
     });

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/event_provider.dart';
+import '../../providers/event_list_provider.dart';
 import '../../models/event_model.dart';
 import '../../theme/dashly_theme.dart';
 import '../tracking/race_interlock_screen.dart';
@@ -42,6 +43,8 @@ class _RedeemScreenState extends State<RedeemScreen> {
 
     if (result != null && result['success'] == true) {
       debugPrint('[RedeemScreen] ✅ Join success');
+      context.read<EventListProvider>().loadExploreEvents();
+      context.read<EventListProvider>().loadMyEventsForMerge();
       _showSnack(result['message'] ?? 'Successfully joined!', false);
       Navigator.pushReplacement(
         context,

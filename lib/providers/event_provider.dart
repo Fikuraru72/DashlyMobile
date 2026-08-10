@@ -69,6 +69,7 @@ class EventProvider extends ChangeNotifier {
       final data = await _eventService.joinEvent(eventId);
       if (data['success'] == true) {
         _successMessage = data['message'];
+        await loadMyEvents(); // Auto refresh myEvents
         _setLoading(false);
         return data; // Return full data for navigation
       } else {
@@ -94,6 +95,7 @@ class EventProvider extends ChangeNotifier {
       final data = await _eventService.joinEventViaToken(token);
       if (data['success'] == true) {
         _successMessage = data['message'];
+        await loadMyEvents(); // Auto refresh myEvents
         _setLoading(false);
         return data; // Return full data for navigation
       } else {

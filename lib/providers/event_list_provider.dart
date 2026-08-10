@@ -126,6 +126,7 @@ class EventListProvider extends ChangeNotifier {
         );
       }
       
+      await loadMyEventsForMerge();
       notifyListeners();
     }
     
