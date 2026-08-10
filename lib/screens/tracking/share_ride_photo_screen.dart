@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:gal/gal.dart';
 import '../../providers/event_provider.dart';
 import '../../theme/dashly_theme.dart';
 
@@ -109,35 +110,20 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
       final file = await _captureCardImage();
       if (file == null) throw Exception("Could not capture image card");
 
-      Directory targetDir;
-      if (Platform.isAndroid) {
-        targetDir = Directory('/storage/emulated/0/Pictures/Dashly');
-        if (!await targetDir.exists()) {
-          try {
-            await targetDir.create(recursive: true);
-          } catch (_) {
-            targetDir = await getApplicationDocumentsDirectory();
-          }
-        }
-      } else {
-        targetDir = await getApplicationDocumentsDirectory();
-      }
-
-      final savedFileName = 'dashly_ride_${DateTime.now().millisecondsSinceEpoch}.png';
-      final savedFile = File('${targetDir.path}/$savedFileName');
-      await file.copy(savedFile.path);
+      // Save directly to device Gallery via Gal plugin (registers with Android MediaStore & iOS Photos)
+      await Gal.putImage(file.path, album: 'Dashly');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Row(
+            content: const Row(
               children: [
-                const Icon(Icons.check_circle_rounded, color: Colors.black),
-                const SizedBox(width: 8),
+                Icon(Icons.check_circle_rounded, color: Colors.black),
+                SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    "Card saved to ${targetDir.path.contains('Pictures') ? 'Pictures/Dashly' : 'Documents'}! 💾",
-                    style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                    "Card saved to Gallery (Dashly Album)! 💾",
+                    style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
                   ),
                 ),
               ],
@@ -151,7 +137,7 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Error saving image: $e"),
+            content: Text("Error saving image to gallery: $e"),
             backgroundColor: context.dashlyColors.error,
           ),
         );
