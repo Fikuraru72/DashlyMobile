@@ -122,11 +122,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       );
     }
   }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(auth.errorMessage ?? 'Failed to update profile'), backgroundColor: context.dashlyColors.error),
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
