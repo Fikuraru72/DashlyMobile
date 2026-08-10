@@ -117,11 +117,12 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
     }
   }
 
-  String _formatDurationHHMM(Duration duration) {
+  String _formatDurationHHMMSS(Duration duration) {
     String twoDigits(int n) => n.toString().padLeft(2, "0");
     String hours = twoDigits(duration.inHours);
     String minutes = twoDigits(duration.inMinutes.remainder(60));
-    return "$hours:$minutes";
+    String seconds = twoDigits(duration.inSeconds.remainder(60));
+    return "$hours:$minutes:$seconds";
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -462,7 +463,7 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
                                       children: [
                                         _buildCleanWhiteStat("DISTANCE", "${widget.totalDistanceKm.toStringAsFixed(2)} km"),
                                         const SizedBox(width: 24),
-                                        _buildCleanWhiteStat("TIME", _formatDurationHHMM(widget.elapsedDuration)),
+                                        _buildCleanWhiteStat("TIME", _formatDurationHHMMSS(widget.elapsedDuration)),
                                       ],
                                     ),
                                     const SizedBox(height: 14),
