@@ -118,24 +118,20 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Completes the profile-setup step (phone + health data).
   Future<bool> completeProfile({
-    required String phone,
+    String? phone,
     required HealthInfo healthInfo,
   }) async {
     _setLoading(true);
     _errorMessage = null;
     try {
-      await _authService.completeProfile(
+      final updatedData = await _authService.completeProfile(
         phone: phone,
         healthInfo: healthInfo.toJson(),
       );
 
       if (_currentUser != null) {
-        _currentUser = _currentUser!.copyWith(
-          phone: phone,
-          healthInfo: healthInfo,
-        );
+        _currentUser = User.fromJson({ ..._currentUser!.toJson(), ...updatedData });
       }
 
       _setLoading(false);

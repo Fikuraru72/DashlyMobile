@@ -95,7 +95,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
     );
 
     final success = await auth.completeProfile(
-      phone: user?.phone ?? '',
+      phone: (user?.phone != null && user!.phone!.trim().isNotEmpty) ? user.phone!.trim() : null,
       healthInfo: healthInfo,
     );
 

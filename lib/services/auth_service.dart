@@ -289,12 +289,17 @@ class AuthService {
   }
 
   Future<Map<String, dynamic>> completeProfile({
-    required String phone,
+    String? phone,
     required Map<String, dynamic> healthInfo,
   }) async {
+    final Map<String, dynamic> data = {'healthInfo': healthInfo};
+    if (phone != null && phone.trim().isNotEmpty) {
+      data['phone'] = phone.trim();
+    }
+
     final response = await _dio.patch(
       '/users/me',
-      data: {'phone': phone, 'healthInfo': healthInfo},
+      data: data,
     );
 
     return response.data as Map<String, dynamic>;
