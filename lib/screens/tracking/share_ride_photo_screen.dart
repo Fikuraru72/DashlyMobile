@@ -10,10 +10,10 @@ import '../../providers/event_provider.dart';
 import '../../theme/dashly_theme.dart';
 
 /// ════════════════════════════════════════════════════════════════
-/// ShareRidePhotoScreen — Strava-Style Cycling Photo Overlay Share 📸
+/// ShareRidePhotoScreen — Strava-Style Cycling Photo Share & Download 📸
 /// ════════════════════════════════════════════════════════════════
-/// Renders ride performance stats over a user-selected photo or
-/// dark gradient canvas, allowing seamless sharing to Instagram, WhatsApp, etc.
+/// Allows riders to pick/take a photo, overlay performance metrics,
+/// download to gallery, and share directly to social media.
 /// ════════════════════════════════════════════════════════════════
 class ShareRidePhotoScreen extends StatefulWidget {
   final int eventId;
@@ -43,7 +43,7 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
   final GlobalKey _globalKey = GlobalKey();
   final ImagePicker _picker = ImagePicker();
   File? _selectedImage;
-  bool _isSharing = false;
+  bool _isProcessing = false;
 
   String _formatDuration(Duration duration) {
     String twoDigits(int n) => n.toString().padLeft(2, "0");
@@ -77,29 +77,106 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
     }
   }
 
-  Future<void> _shareCard() async {
-    if (_isSharing) return;
-    setState(() => _isSharing = true);
-
+  /// Captures the RepaintBoundary widget into a high-res PNG File
+  Future<File?> _captureCardImage() async {
     try {
       final boundary = _globalKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
-      if (boundary == null) {
-        throw Exception("Could not find canvas boundary");
-      }
+      if (boundary == null) return null;
 
-      // Capture at high resolution 3.0x pixel ratio
-      final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+      // Use 2.0x pixel ratio for maximum memory safety and high sharpness
+      final ui.Image image = await boundary.toImage(pixelRatio: 2.0);
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-      if (byteData == null) throw Exception("Failed to generate image bytes");
+      if (byteData == null) return null;
 
       final pngBytes = byteData.buffer.asUint8List();
       final tempDir = await getTemporaryDirectory();
-      final file = await File('${tempDir.path}/dashly_ride_${DateTime.now().millisecondsSinceEpoch}.png').create();
+      final filePath = '${tempDir.path}/dashly_ride_${DateTime.now().millisecondsSinceEpoch}.png';
+      final file = File(filePath);
       await file.writeAsBytes(pngBytes);
+      return file;
+    } catch (e) {
+      print("Failed to capture image boundary: $e");
+      return null;
+    }
+  }
+
+  /// Option 1: Download / Save Card to Gallery
+  Future<void> _downloadCard() async {
+    if (_isProcessing) return;
+    setState(() => _isProcessing = true);
+
+    try {
+      final file = await _captureCardImage();
+      if (file == null) throw Exception("Could not capture image card");
+
+      Directory targetDir;
+      if (Platform.isAndroid) {
+        targetDir = Directory('/storage/emulated/0/Pictures/Dashly');
+        if (!await targetDir.exists()) {
+          try {
+            await targetDir.create(recursive: true);
+          } catch (_) {
+            targetDir = await getApplicationDocumentsDirectory();
+          }
+        }
+      } else {
+        targetDir = await getApplicationDocumentsDirectory();
+      }
+
+      final savedFileName = 'dashly_ride_${DateTime.now().millisecondsSinceEpoch}.png';
+      final savedFile = File('${targetDir.path}/$savedFileName');
+      await file.copy(savedFile.path);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle_rounded, color: Colors.black),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    "Card saved to Pictures/Gallery! 💾",
+                    style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: context.dashlyColors.accent,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Error saving image: $e"),
+            backgroundColor: context.dashlyColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
+    }
+  }
+
+  /// Option 2: Share Card to Social Media
+  Future<void> _shareCard() async {
+    if (_isProcessing) return;
+    setState(() => _isProcessing = true);
+
+    try {
+      final file = await _captureCardImage();
+      if (file == null) throw Exception("Could not capture image card");
+
+      final box = context.findRenderObject() as RenderBox?;
+      final Rect? sharePositionOrigin = box != null ? (box.localToGlobal(Offset.zero) & box.size) : null;
 
       await Share.shareXFiles(
-        [XFile(file.path)],
-        text: 'Finished ${widget.eventName} with Dashly Cycling! 🚴‍♂️⚡ #DashlyCycling #${widget.eventName.replaceAll(' ', '')}',
+        [XFile(file.path, mimeType: 'image/png')],
+        text: 'Finished ${widget.eventName} with Dashly Cycling! 🚴‍♂️⚡ #DashlyCycling',
+        sharePositionOrigin: sharePositionOrigin,
       );
     } catch (e) {
       if (mounted) {
@@ -111,7 +188,7 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
         );
       }
     } finally {
-      if (mounted) setState(() => _isSharing = false);
+      if (mounted) setState(() => _isProcessing = false);
     }
   }
 
@@ -371,36 +448,68 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
               ),
             ),
 
-            // Share CTA Button
+            // Action Buttons: Save/Download & Share
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: context.dashlyColors.surface,
                 border: Border(top: BorderSide(color: context.dashlyColors.divider)),
               ),
-              child: SizedBox(
-                width: double.infinity,
-                height: 54,
-                child: ElevatedButton.icon(
-                  onPressed: _isSharing ? null : _shareCard,
-                  icon: _isSharing
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
-                      : const Icon(Icons.share_rounded, color: Colors.black),
-                  label: Text(
-                    _isSharing ? "GENERATING CARD..." : "SHARE TO SOCIAL MEDIA",
-                    style: const TextStyle(
-                      color: Colors.black,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.2,
-                      fontSize: 14,
+              child: Row(
+                children: [
+                  // 1. Download / Save Button
+                  Expanded(
+                    child: SizedBox(
+                      height: 52,
+                      child: OutlinedButton.icon(
+                        onPressed: _isProcessing ? null : _downloadCard,
+                        icon: Icon(Icons.download_rounded, color: context.dashlyColors.accent, size: 18),
+                        label: const Text(
+                          "DOWNLOAD",
+                          style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.0,
+                            fontSize: 13,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: context.dashlyColors.accent,
+                          side: BorderSide(color: context.dashlyColors.accent, width: 1.5),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        ),
+                      ),
                     ),
                   ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: context.dashlyColors.accent,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    elevation: 6,
+                  const SizedBox(width: 12),
+
+                  // 2. Share to Social Media Button
+                  Expanded(
+                    flex: 1,
+                    child: SizedBox(
+                      height: 52,
+                      child: ElevatedButton.icon(
+                        onPressed: _isProcessing ? null : _shareCard,
+                        icon: _isProcessing
+                            ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
+                            : const Icon(Icons.share_rounded, color: Colors.black, size: 18),
+                        label: Text(
+                          _isProcessing ? "PROCESSING..." : "SHARE CARD",
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.0,
+                            fontSize: 13,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: context.dashlyColors.accent,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          elevation: 4,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
           ],
