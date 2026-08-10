@@ -7,6 +7,7 @@ import '../../providers/tracking_provider.dart';
 import '../../providers/event_provider.dart';
 import '../../theme/dashly_theme.dart';
 import '../../widgets/altitude_chart_widget.dart';
+import 'race_summary_screen.dart';
 
 /// ════════════════════════════════════════════════════════════════
 /// StatsTrackingScreen — Standalone Battery Saver Mode (No Map)
@@ -698,9 +699,34 @@ class _StatsTrackingScreenState extends State<StatsTrackingScreen> {
               : ElevatedButton(
                   onPressed: () async {
                     if (await _showExitConfirmation()) {
+                      final elapsed = _stopwatch.elapsed;
+                      final dist = tracker.totalDistance;
+                      final avgSpd = tracker.avgSpeed;
+                      final maxSpd = tracker.maxSpeed;
+                      final elev = tracker.elevationGain;
+                      final rank = tracker.currentRank;
+                      final totalRunners = tracker.totalParticipants;
+
                       tracker.stopTracking();
                       _stopwatch.stop();
-                      if (mounted) Navigator.pop(context);
+                      if (mounted) {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => RaceSummaryScreen(
+                              eventId: widget.eventId,
+                              eventName: widget.eventName,
+                              elapsedDuration: elapsed,
+                              totalDistanceKm: dist,
+                              avgSpeedKmh: avgSpd,
+                              maxSpeedKmh: maxSpd,
+                              elevationGainM: elev,
+                              finalRank: rank,
+                              totalParticipants: totalRunners,
+                            ),
+                          ),
+                        );
+                      }
                     }
                   },
                   style: ElevatedButton.styleFrom(

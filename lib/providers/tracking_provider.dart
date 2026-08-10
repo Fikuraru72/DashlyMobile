@@ -5,7 +5,6 @@ import 'package:geolocator/geolocator.dart';
 import '../models/event_model.dart';
 import '../services/location_service.dart';
 import '../services/mqtt_service.dart';
-import '../services/event_service.dart';
 import '../core/utils/geo_utils.dart';
 
 class TrackingProvider extends ChangeNotifier {
@@ -14,6 +13,7 @@ class TrackingProvider extends ChangeNotifier {
   
   bool _isTracking = false;
   double _currentSpeed = 0.0;
+  double _maxSpeed = 0.0;
   double _totalDistance = 0.0; // in km
   double _elevationGain = 0.0; // in meters
   double _lastAltitude = -9999.0;
@@ -30,6 +30,7 @@ class TrackingProvider extends ChangeNotifier {
 
   bool get isTracking => _isTracking;
   double get currentSpeed => _currentSpeed;
+  double get maxSpeed => _maxSpeed;
   double get totalDistance => _totalDistance;
   double get avgSpeed => _avgSpeed;
   double get elevationGain => _elevationGain;
@@ -167,6 +168,9 @@ class TrackingProvider extends ChangeNotifier {
 
           _currentPosition = newPos;
           _currentSpeed = speedKmH;
+          if (speedKmH > _maxSpeed) {
+            _maxSpeed = speedKmH;
+          }
           notifyListeners();
         },
       );

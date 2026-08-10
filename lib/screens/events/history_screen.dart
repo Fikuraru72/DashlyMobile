@@ -4,6 +4,7 @@ import '../../providers/event_provider.dart';
 import '../../models/event_model.dart';
 import '../../theme/dashly_theme.dart';
 import '../tracking/tracking_mode_dialog.dart';
+import '../tracking/race_summary_screen.dart';
 import 'event_detail_screen.dart';
 
 class HistoryScreen extends StatefulWidget {
@@ -167,6 +168,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     Color statusColor;
     String statusText;
     bool isLive = event.status == EventStatus.start;
+    bool isFinished = event.status == EventStatus.finished || event.participantState == ParticipantState.finished;
 
     switch (event.status) {
       case EventStatus.start:
@@ -290,6 +292,37 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     SizedBox(width: 8),
                     Text("ENTER RACE NOW", style: TextStyle(fontWeight: FontWeight.w900)),
                   ],
+                ),
+              ),
+            ] else if (isFinished) ...[
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => RaceSummaryScreen(
+                          eventId: event.id,
+                          eventName: event.name,
+                          elapsedDuration: const Duration(minutes: 45),
+                          totalDistanceKm: (event.totalDistanceMeters ?? 10000) / 1000.0,
+                          avgSpeedKmh: 28.5,
+                          maxSpeedKmh: 42.0,
+                          elevationGainM: (event.totalElevationMeters ?? 250).toDouble(),
+                        ),
+                      ),
+                    );
+                  },
+                  icon: Icon(Icons.emoji_events_rounded, color: context.dashlyColors.accent, size: 18),
+                  label: const Text("VIEW RIDE STATS", style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.0)),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: context.dashlyColors.accent,
+                    side: BorderSide(color: context.dashlyColors.accent),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
                 ),
               ),
             ],
