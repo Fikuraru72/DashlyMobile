@@ -7,14 +7,17 @@ import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:gal/gal.dart';
+import '../../core/utils/geo_utils.dart';
 import '../../providers/event_provider.dart';
 import '../../theme/dashly_theme.dart';
 
 /// ════════════════════════════════════════════════════════════════
-/// ShareRidePhotoScreen — Strava-Style Cycling Photo Share & Download 📸
+/// ShareRidePhotoScreen — Strava-Style Minimalist Photo Share 📸
 /// ════════════════════════════════════════════════════════════════
-/// Allows riders to pick/take a photo, overlay performance metrics,
-/// download to gallery, and share directly to social media.
+/// Features an ultra-clean minimalist overlay with:
+/// - Neon GPS route vector line drawn over the photo canvas
+/// - Compact non-obtrusive metrics pill (Distance, Duration, Speed, Elev)
+/// - Photo selection from Gallery/Camera + Download & Share options
 /// ════════════════════════════════════════════════════════════════
 class ShareRidePhotoScreen extends StatefulWidget {
   final int eventId;
@@ -24,6 +27,7 @@ class ShareRidePhotoScreen extends StatefulWidget {
   final double avgSpeedKmh;
   final double maxSpeedKmh;
   final double elevationGainM;
+  final Map<String, dynamic>? routeGeojson;
 
   const ShareRidePhotoScreen({
     super.key,
@@ -34,6 +38,7 @@ class ShareRidePhotoScreen extends StatefulWidget {
     required this.avgSpeedKmh,
     required this.maxSpeedKmh,
     required this.elevationGainM,
+    this.routeGeojson,
   });
 
   @override
@@ -45,6 +50,54 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
   final ImagePicker _picker = ImagePicker();
   File? _selectedImage;
   bool _isProcessing = false;
+  List<DashlyLatLng> _routePoints = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _extractRoutePoints();
+  }
+
+  void _extractRoutePoints() {
+    if (widget.routeGeojson == null) return;
+    try {
+      final geojson = widget.routeGeojson!;
+      List<dynamic> rawCoords = [];
+
+      if (geojson['type'] == 'LineString' && geojson['coordinates'] is List) {
+        rawCoords = geojson['coordinates'];
+      } else if (geojson['type'] == 'Feature' && geojson['geometry'] != null) {
+        rawCoords = geojson['geometry']['coordinates'] ?? [];
+      } else if (geojson['type'] == 'FeatureCollection' && geojson['features'] != null && (geojson['features'] as List).isNotEmpty) {
+        final feat = (geojson['features'] as List).first;
+        rawCoords = feat['geometry']['coordinates'] ?? [];
+      }
+
+      final parsed = <DashlyLatLng>[];
+      for (var c in rawCoords) {
+        if (c is List && c.length >= 2) {
+          final double lng = (c[0] as num).toDouble();
+          final double lat = (c[1] as num).toDouble();
+          parsed.add(DashlyLatLng(lat, lng));
+        }
+      }
+
+      // Sample down to max 300 points for smooth vector rendering
+      if (parsed.length > 300) {
+        final step = (parsed.length / 300).ceil();
+        final sampled = <DashlyLatLng>[];
+        for (int i = 0; i < parsed.length; i += step) {
+          sampled.add(parsed[i]);
+        }
+        if (sampled.last != parsed.last) sampled.add(parsed.last);
+        _routePoints = sampled;
+      } else {
+        _routePoints = parsed;
+      }
+    } catch (e) {
+      print("Error parsing route GeoJSON for share overlay: $e");
+    }
+  }
 
   String _formatDuration(Duration duration) {
     String twoDigits(int n) => n.toString().padLeft(2, "0");
@@ -84,7 +137,6 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
       final boundary = _globalKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
       if (boundary == null) return null;
 
-      // Use 2.0x pixel ratio for maximum memory safety and high sharpness
       final ui.Image image = await boundary.toImage(pixelRatio: 2.0);
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       if (byteData == null) return null;
@@ -101,7 +153,7 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
     }
   }
 
-  /// Option 1: Download / Save Card to Gallery
+  /// Download / Save Card to Device Gallery
   Future<void> _downloadCard() async {
     if (_isProcessing) return;
     setState(() => _isProcessing = true);
@@ -122,7 +174,7 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
         print("Gal save error (falling back to direct file write): $galError");
       }
 
-      // Fallback save directly to Pictures/Dashly directory
+      // Fallback direct copy to Pictures/Dashly
       if (!galSuccess) {
         Directory targetDir;
         if (Platform.isAndroid) {
@@ -175,7 +227,7 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
     }
   }
 
-  /// Option 2: Share Card to Social Media
+  /// Share Card to Social Media
   Future<void> _shareCard() async {
     if (_isProcessing) return;
     setState(() => _isProcessing = true);
@@ -184,6 +236,7 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
       final file = await _captureCardImage();
       if (file == null) throw Exception("Could not capture image card");
       if (!mounted) return;
+
       final box = context.findRenderObject() as RenderBox?;
       final Rect? sharePositionOrigin = box != null ? (box.localToGlobal(Offset.zero) & box.size) : null;
 
@@ -242,7 +295,7 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 child: Column(
                   children: [
-                    // RepaintBoundary Canvas Card
+                    // RepaintBoundary Minimalist Photo Card
                     RepaintBoundary(
                       key: _globalKey,
                       child: Container(
@@ -262,7 +315,7 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
                           child: Stack(
                             fit: StackFit.expand,
                             children: [
-                              // 1. Background Image or Gradient
+                              // 1. Background Photo or Dark Canvas
                               if (_selectedImage != null)
                                 Image.file(
                                   _selectedImage!,
@@ -284,56 +337,67 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
                                   child: Center(
                                     child: Icon(
                                       Icons.directions_bike_rounded,
-                                      size: 120,
-                                      color: context.dashlyColors.accent.withValues(alpha: 0.12),
+                                      size: 110,
+                                      color: context.dashlyColors.accent.withValues(alpha: 0.1),
                                     ),
                                   ),
                                 ),
 
-                              // Gradient Vignette Overlay for Contrast
+                              // Subtle Vignette Gradient for Contrast
                               Container(
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
                                     colors: [
-                                      Colors.black.withValues(alpha: 0.6),
+                                      Colors.black.withValues(alpha: 0.5),
                                       Colors.transparent,
-                                      Colors.black.withValues(alpha: 0.85),
+                                      Colors.black.withValues(alpha: 0.75),
                                     ],
                                     begin: Alignment.topCenter,
                                     end: Alignment.bottomCenter,
-                                    stops: const [0.0, 0.4, 1.0],
+                                    stops: const [0.0, 0.45, 1.0],
                                   ),
                                 ),
                               ),
 
-                              // 2. Top Header Branding
+                              // 2. Vector Mini GPS Route Line Overlay
+                              if (_routePoints.isNotEmpty)
+                                Positioned.fill(
+                                  child: CustomPaint(
+                                    painter: MiniRoutePainter(
+                                      points: _routePoints,
+                                      routeColor: context.dashlyColors.accent,
+                                    ),
+                                  ),
+                                ),
+
+                              // 3. Top Header Branding Badge
                               Positioned(
-                                top: 20,
-                                left: 20,
-                                right: 20,
+                                top: 16,
+                                left: 16,
+                                right: 16,
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    // Dashly Logo Badge
+                                    // Dashly Logo Pill
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                                       decoration: BoxDecoration(
-                                        color: Colors.black.withValues(alpha: 0.6),
-                                        borderRadius: BorderRadius.circular(20),
-                                        border: Border.all(color: context.dashlyColors.accent.withValues(alpha: 0.6)),
+                                        color: Colors.black.withValues(alpha: 0.65),
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(color: context.dashlyColors.accent.withValues(alpha: 0.5)),
                                       ),
                                       child: Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          Icon(Icons.bolt_rounded, size: 14, color: context.dashlyColors.accent),
-                                          const SizedBox(width: 4),
+                                          Icon(Icons.bolt_rounded, size: 13, color: context.dashlyColors.accent),
+                                          const SizedBox(width: 3),
                                           Text(
                                             "DASHLY CYCLING",
                                             style: TextStyle(
                                               color: context.dashlyColors.accent,
                                               fontWeight: FontWeight.w900,
-                                              fontSize: 10,
-                                              letterSpacing: 1.2,
+                                              fontSize: 9,
+                                              letterSpacing: 1.0,
                                             ),
                                           ),
                                         ],
@@ -343,10 +407,10 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
                                     // BIB Badge
                                     if (bibText.isNotEmpty)
                                       Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                                         decoration: BoxDecoration(
-                                          color: Colors.black.withValues(alpha: 0.6),
-                                          borderRadius: BorderRadius.circular(20),
+                                          color: Colors.black.withValues(alpha: 0.65),
+                                          borderRadius: BorderRadius.circular(16),
                                           border: Border.all(color: Colors.white24),
                                         ),
                                         child: Text(
@@ -354,7 +418,7 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
                                           style: const TextStyle(
                                             color: Colors.white,
                                             fontWeight: FontWeight.bold,
-                                            fontSize: 10,
+                                            fontSize: 9,
                                             letterSpacing: 1.0,
                                           ),
                                         ),
@@ -363,55 +427,53 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
                                 ),
                               ),
 
-                              // 3. Event Name
+                              // 4. Ultra-Minimalist Bottom Stats Card (Translucent Compact Pill)
                               Positioned(
-                                top: 62,
-                                left: 20,
-                                right: 20,
-                                child: Text(
-                                  widget.eventName.toUpperCase(),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w900,
-                                    fontSize: 15,
-                                    letterSpacing: 1.2,
-                                    shadows: [
-                                      Shadow(color: Colors.black87, blurRadius: 6),
+                                bottom: 16,
+                                left: 14,
+                                right: 14,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withValues(alpha: 0.72),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(color: Colors.white12),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(alpha: 0.3),
+                                        blurRadius: 10,
+                                      ),
                                     ],
                                   ),
-                                ),
-                              ),
-
-                              // 4. Bottom Metrics Overlay Card (Glassmorphism)
-                              Positioned(
-                                bottom: 20,
-                                left: 16,
-                                right: 16,
-                                child: Container(
-                                  padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.withValues(alpha: 0.75),
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(color: Colors.white12),
-                                  ),
                                   child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Row(
-                                        children: [
-                                          Expanded(child: _buildOverlayMetricItem(context, "DISTANCE", widget.totalDistanceKm.toStringAsFixed(2), "KM", Icons.straighten_rounded)),
-                                          _buildDivider(context),
-                                          Expanded(child: _buildOverlayMetricItem(context, "RIDE TIME", _formatDuration(widget.elapsedDuration), "", Icons.timer_outlined)),
-                                        ],
+                                      // Event Name Title
+                                      Text(
+                                        widget.eventName.toUpperCase(),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 12,
+                                          letterSpacing: 1.0,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                       ),
-                                      const Padding(
-                                        padding: EdgeInsets.symmetric(vertical: 10),
-                                        child: Divider(height: 1, color: Colors.white12),
-                                      ),
+                                      const SizedBox(height: 8),
+
+                                      // Inline Minimalist Stats Row
                                       Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                         children: [
-                                          Expanded(child: _buildOverlayMetricItem(context, "AVG SPEED", widget.avgSpeedKmh.toStringAsFixed(1), "KM/H", Icons.directions_bike_rounded)),
-                                          _buildDivider(context),
-                                          Expanded(child: _buildOverlayMetricItem(context, "ELEV GAIN", widget.elevationGainM.toStringAsFixed(0), "M", Icons.landscape_rounded)),
+                                          _buildMinimalStat(context, "DIST", "${widget.totalDistanceKm.toStringAsFixed(2)} km"),
+                                          _buildMinimalDivider(),
+                                          _buildMinimalStat(context, "TIME", _formatDuration(widget.elapsedDuration)),
+                                          _buildMinimalDivider(),
+                                          _buildMinimalStat(context, "AVG", "${widget.avgSpeedKmh.toStringAsFixed(1)} km/h"),
+                                          _buildMinimalDivider(),
+                                          _buildMinimalStat(context, "ELEV", "${widget.elevationGainM.toStringAsFixed(0)} m"),
                                         ],
                                       ),
                                     ],
@@ -423,7 +485,7 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
 
                     // Photo Selector Controls (Camera vs Gallery)
                     Row(
@@ -431,27 +493,27 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
                         Expanded(
                           child: OutlinedButton.icon(
                             onPressed: () => _pickImage(ImageSource.camera),
-                            icon: const Icon(Icons.camera_alt_rounded, size: 18),
-                            label: const Text("TAKE PHOTO", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                            icon: const Icon(Icons.camera_alt_rounded, size: 16),
+                            label: const Text("TAKE PHOTO", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: context.dashlyColors.textPrimary,
                               side: BorderSide(color: context.dashlyColors.divider),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
                             ),
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 10),
                         Expanded(
                           child: OutlinedButton.icon(
                             onPressed: () => _pickImage(ImageSource.gallery),
-                            icon: const Icon(Icons.photo_library_rounded, size: 18),
-                            label: const Text("SELECT GALLERY", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                            icon: const Icon(Icons.photo_library_rounded, size: 16),
+                            label: const Text("SELECT GALLERY", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: context.dashlyColors.textPrimary,
                               side: BorderSide(color: context.dashlyColors.divider),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
                             ),
                           ),
                         ),
@@ -474,7 +536,7 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
                   // 1. Download / Save Button
                   Expanded(
                     child: SizedBox(
-                      height: 52,
+                      height: 50,
                       child: OutlinedButton.icon(
                         onPressed: _isProcessing ? null : _downloadCard,
                         icon: Icon(Icons.download_rounded, color: context.dashlyColors.accent, size: 18),
@@ -498,9 +560,8 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
 
                   // 2. Share to Social Media Button
                   Expanded(
-                    flex: 1,
                     child: SizedBox(
-                      height: 52,
+                      height: 50,
                       child: ElevatedButton.icon(
                         onPressed: _isProcessing ? null : _shareCard,
                         icon: _isProcessing
@@ -532,61 +593,112 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
     );
   }
 
-  Widget _buildOverlayMetricItem(BuildContext context, String label, String value, String unit, IconData icon) {
+  Widget _buildMinimalStat(BuildContext context, String label, String value) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 12, color: context.dashlyColors.accent),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: TextStyle(
-                color: context.dashlyColors.accent,
-                fontSize: 9,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.0,
-              ),
-            ),
-          ],
+        Text(
+          label,
+          style: TextStyle(
+            color: context.dashlyColors.accent,
+            fontSize: 8,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.8,
+          ),
         ),
-        const SizedBox(height: 4),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.baseline,
-          textBaseline: TextBaseline.alphabetic,
-          children: [
-            Text(
-              value,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-            if (unit.isNotEmpty) ...[
-              const SizedBox(width: 3),
-              Text(
-                unit,
-                style: TextStyle(
-                  color: context.dashlyColors.accent,
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ],
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.w900,
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildDivider(BuildContext context) {
+  Widget _buildMinimalDivider() {
     return Container(
       width: 1,
-      height: 30,
+      height: 20,
       color: Colors.white12,
     );
   }
+}
+
+/// ════════════════════════════════════════════════════════════════
+/// MiniRoutePainter — Vector Route Trace Overlay for Photo Cards 🚴‍♂️
+/// ════════════════════════════════════════════════════════════════
+class MiniRoutePainter extends CustomPainter {
+  final List<DashlyLatLng> points;
+  final Color routeColor;
+
+  MiniRoutePainter({required this.points, required this.routeColor});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (points.length < 2) return;
+
+    // Find lat/lng bounding box
+    double minLat = points.first.latitude;
+    double maxLat = points.first.latitude;
+    double minLng = points.first.longitude;
+    double maxLng = points.first.longitude;
+
+    for (var p in points) {
+      if (p.latitude < minLat) minLat = p.latitude;
+      if (p.latitude > maxLat) maxLat = p.latitude;
+      if (p.longitude < minLng) minLng = p.longitude;
+      if (p.longitude > maxLng) maxLng = p.longitude;
+    }
+
+    double latSpan = maxLat - minLat;
+    double lngSpan = maxLng - minLng;
+    if (latSpan == 0) latSpan = 0.0001;
+    if (lngSpan == 0) lngSpan = 0.0001;
+
+    final path = Path();
+    const double paddingHorizontal = 40.0;
+    const double paddingTop = 80.0;
+    const double paddingBottom = 100.0;
+
+    final drawWidth = size.width - (paddingHorizontal * 2);
+    final drawHeight = size.height - (paddingTop + paddingBottom);
+
+    for (int i = 0; i < points.length; i++) {
+      final p = points[i];
+      final x = paddingHorizontal + ((p.longitude - minLng) / lngSpan) * drawWidth;
+      final y = paddingTop + (1.0 - ((p.latitude - minLat) / latSpan)) * drawHeight;
+
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+    }
+
+    // Outer Neon Glow Line
+    final glowPaint = Paint()
+      ..color = routeColor.withValues(alpha: 0.45)
+      ..strokeWidth = 6.0
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    // Inner Solid Line
+    final linePaint = Paint()
+      ..color = routeColor
+      ..strokeWidth = 3.2
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    canvas.drawPath(path, glowPaint);
+    canvas.drawPath(path, linePaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }

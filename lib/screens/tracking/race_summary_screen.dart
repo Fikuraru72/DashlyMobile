@@ -130,6 +130,7 @@ class RaceSummaryScreen extends StatelessWidget {
                             avgSpeedKmh: avgSpeedKmh,
                             maxSpeedKmh: maxSpeedKmh,
                             elevationGainM: elevationGainM,
+                            routeGeojson: currentEvent?.routeGeojson,
                           ),
                         ),
                       );
