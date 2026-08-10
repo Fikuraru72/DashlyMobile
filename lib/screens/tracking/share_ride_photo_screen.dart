@@ -12,12 +12,10 @@ import '../../providers/event_provider.dart';
 import '../../theme/dashly_theme.dart';
 
 /// ════════════════════════════════════════════════════════════════
-/// ShareRidePhotoScreen — Exact Strava-Style Activity Overlay Share 📸
+/// ShareRidePhotoScreen — Strava-Style Cycling Photo Share 📸
 /// ════════════════════════════════════════════════════════════════
-/// Replicates Strava's iconic activity share design:
-/// - Centered clean stats stack (Distance, Elev Gain, Time)
-/// - Vibrant orange floating vector route line trace
-/// - Centered bold white DASHLY logo at the bottom
+/// Combines Dashly's rich 4-metrics glassmorphism card with Strava's
+/// iconic floating orange vector route line drawn directly over the photo.
 /// ════════════════════════════════════════════════════════════════
 class ShareRidePhotoScreen extends StatefulWidget {
   final int eventId;
@@ -99,7 +97,7 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
     }
 
     if (_routePoints.isEmpty) {
-      // Stylized cycling loop route trace matching Strava reference style
+      // Stylized fallback cycling loop path
       _routePoints = const [
         DashlyLatLng(-7.250, 112.750),
         DashlyLatLng(-7.245, 112.753),
@@ -116,14 +114,11 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
     }
   }
 
-  String _formatDurationStrava(Duration duration) {
-    int hours = duration.inHours;
-    int mins = duration.inMinutes.remainder(60);
-    if (hours > 0) {
-      return "${hours}h ${mins}m";
-    } else {
-      return "${mins}m ${duration.inSeconds.remainder(60)}s";
-    }
+  String _formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, "0");
+    String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
+    String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
+    return "${twoDigits(duration.inHours)}:$twoDigitMinutes:$twoDigitSeconds";
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -296,7 +291,7 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          "SHARE ACTIVITY",
+          "SHARE RIDE CARD",
           style: TextStyle(
             color: context.dashlyColors.accent,
             fontWeight: FontWeight.w900,
@@ -314,26 +309,27 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 child: Column(
                   children: [
-                    // RepaintBoundary Exact Strava Card
+                    // RepaintBoundary Photo Card
                     RepaintBoundary(
                       key: _globalKey,
                       child: Container(
                         width: double.infinity,
-                        height: 480,
+                        height: 440,
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(28),
-                          color: Colors.black,
+                          borderRadius: BorderRadius.circular(24),
+                          color: context.dashlyColors.surface,
+                          border: Border.all(color: context.dashlyColors.accent.withValues(alpha: 0.3)),
                           boxShadow: DashlyTheme.glowShadow(
-                            color: Colors.black54,
-                            blur: 20,
+                            color: Colors.black45,
+                            blur: 16,
                           ),
                         ),
                         child: ClipRRect(
-                          borderRadius: BorderRadius.circular(28),
+                          borderRadius: BorderRadius.circular(24),
                           child: Stack(
                             fit: StackFit.expand,
                             children: [
-                              // 1. Background Photo or Strava Dark Grid Background
+                              // 1. Background Photo or Dark Gradient Canvas
                               if (_selectedImage != null)
                                 Image.file(
                                   _selectedImage!,
@@ -341,108 +337,162 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
                                 )
                               else
                                 Container(
-                                  decoration: const BoxDecoration(
+                                  decoration: BoxDecoration(
                                     gradient: LinearGradient(
                                       colors: [
-                                        Color(0xFF1E1E1E),
-                                        Color(0xFF121212),
-                                        Color(0xFF000000),
+                                        context.dashlyColors.surface,
+                                        context.dashlyColors.surfaceLight,
+                                        Colors.black,
                                       ],
-                                      begin: Alignment.topCenter,
-                                      end: Alignment.bottomCenter,
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
                                     ),
                                   ),
                                   child: Center(
                                     child: Icon(
                                       Icons.directions_bike_rounded,
-                                      size: 140,
-                                      color: Colors.white.withValues(alpha: 0.04),
+                                      size: 110,
+                                      color: context.dashlyColors.accent.withValues(alpha: 0.1),
                                     ),
                                   ),
                                 ),
 
-                              // Black Tint Vignette Layer for High Text Readability
+                              // Subtle Vignette Gradient for Text Contrast
                               Container(
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
                                     colors: [
-                                      Colors.black.withValues(alpha: _selectedImage != null ? 0.4 : 0.2),
+                                      Colors.black.withValues(alpha: 0.5),
                                       Colors.transparent,
-                                      Colors.black.withValues(alpha: _selectedImage != null ? 0.65 : 0.4),
+                                      Colors.black.withValues(alpha: 0.75),
                                     ],
                                     begin: Alignment.topCenter,
                                     end: Alignment.bottomCenter,
-                                    stops: const [0.0, 0.5, 1.0],
+                                    stops: const [0.0, 0.45, 1.0],
                                   ),
                                 ),
                               ),
 
-                              // 2. Strava-style Centered Content Stack
-                              Positioned.fill(
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      // Top Stats Group (Distance, Elev Gain, Time)
-                                      Column(
+                              // 2. Floating Orange GPS Route Line Trace (Floating directly on photo, NO BOX)
+                              if (_routePoints.isNotEmpty)
+                                Align(
+                                  alignment: Alignment.center,
+                                  child: SizedBox(
+                                    width: 200,
+                                    height: 110,
+                                    child: CustomPaint(
+                                      painter: StravaRoutePainter(
+                                        points: _routePoints,
+                                        routeColor: const Color(0xFFFC5200), // Iconic Strava Orange
+                                      ),
+                                    ),
+                                  ),
+                                ),
+
+                              // 3. Top Header Branding Badge
+                              Positioned(
+                                top: 16,
+                                left: 16,
+                                right: 16,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    // Dashly Logo Pill
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                      decoration: BoxDecoration(
+                                        color: Colors.black.withValues(alpha: 0.65),
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(color: context.dashlyColors.accent.withValues(alpha: 0.5)),
+                                      ),
+                                      child: Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          const SizedBox(height: 12),
-                                          _buildStravaStatItem("Distance", "${widget.totalDistanceKm.toStringAsFixed(2)} km"),
-                                          const SizedBox(height: 18),
-                                          _buildStravaStatItem("Elev Gain", "${widget.elevationGainM.toStringAsFixed(0)} m"),
-                                          const SizedBox(height: 18),
-                                          _buildStravaStatItem("Time", _formatDurationStrava(widget.elapsedDuration)),
+                                          Icon(Icons.bolt_rounded, size: 13, color: context.dashlyColors.accent),
+                                          const SizedBox(width: 3),
+                                          Text(
+                                            "DASHLY CYCLING",
+                                            style: TextStyle(
+                                              color: context.dashlyColors.accent,
+                                              fontWeight: FontWeight.w900,
+                                              fontSize: 9,
+                                              letterSpacing: 1.0,
+                                            ),
+                                          ),
                                         ],
                                       ),
+                                    ),
 
-                                      // Middle Strava Orange GPS Route Vector Line
-                                      if (_routePoints.isNotEmpty)
-                                        SizedBox(
-                                          width: 180,
-                                          height: 90,
-                                          child: CustomPaint(
-                                            painter: StravaRoutePainter(
-                                              points: _routePoints,
-                                              routeColor: const Color(0xFFFC5200), // Iconic Strava Orange
-                                            ),
+                                    // BIB Badge
+                                    if (bibText.isNotEmpty)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withValues(alpha: 0.65),
+                                          borderRadius: BorderRadius.circular(16),
+                                          border: Border.all(color: Colors.white24),
+                                        ),
+                                        child: Text(
+                                          bibText,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 9,
+                                            letterSpacing: 1.0,
                                           ),
-                                        )
-                                      else
-                                        const SizedBox(height: 90),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
 
-                                      // Bottom DASHLY Centered Logo
-                                      Column(
-                                        mainAxisSize: MainAxisSize.min,
+                              // 4. Sleek Bottom Glassmorphism Stats Card
+                              Positioned(
+                                bottom: 16,
+                                left: 14,
+                                right: 14,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withValues(alpha: 0.72),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(color: Colors.white12),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(alpha: 0.3),
+                                        blurRadius: 10,
+                                      ),
+                                    ],
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      // Event Name Title
+                                      Text(
+                                        widget.eventName.toUpperCase(),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 12,
+                                          letterSpacing: 1.0,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 8),
+
+                                      // Inline Minimalist Stats Row
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                         children: [
-                                          Text(
-                                            "DASHLY",
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.w900,
-                                              fontSize: 26,
-                                              letterSpacing: 4.0,
-                                              shadows: [
-                                                Shadow(color: Colors.black87, blurRadius: 10, offset: Offset(0, 2)),
-                                              ],
-                                            ),
-                                          ),
-                                          if (bibText.isNotEmpty) ...[
-                                            const SizedBox(height: 4),
-                                            Text(
-                                              "${widget.eventName.toUpperCase()} • $bibText",
-                                              style: TextStyle(
-                                                color: Colors.white.withValues(alpha: 0.8),
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 10,
-                                                letterSpacing: 1.2,
-                                                shadows: const [
-                                                  Shadow(color: Colors.black87, blurRadius: 6),
-                                                ],
-                                              ),
-                                            ),
-                                          ],
+                                          _buildMinimalStat(context, "DIST", "${widget.totalDistanceKm.toStringAsFixed(2)} km"),
+                                          _buildMinimalDivider(),
+                                          _buildMinimalStat(context, "TIME", _formatDuration(widget.elapsedDuration)),
+                                          _buildMinimalDivider(),
+                                          _buildMinimalStat(context, "AVG", "${widget.avgSpeedKmh.toStringAsFixed(1)} km/h"),
+                                          _buildMinimalDivider(),
+                                          _buildMinimalStat(context, "ELEV", "${widget.elevationGainM.toStringAsFixed(0)} m"),
                                         ],
                                       ),
                                     ],
@@ -454,9 +504,9 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 16),
 
-                    // Photo Controls (Camera vs Gallery)
+                    // Photo Selector Controls (Camera vs Gallery)
                     Row(
                       children: [
                         Expanded(
@@ -562,19 +612,17 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
     );
   }
 
-  Widget _buildStravaStatItem(String label, String value) {
+  Widget _buildMinimalStat(BuildContext context, String label, String value) {
     return Column(
-      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
           style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.8),
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            shadows: const [
-              Shadow(color: Colors.black87, blurRadius: 6),
-            ],
+            color: context.dashlyColors.accent,
+            fontSize: 8,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.8,
           ),
         ),
         const SizedBox(height: 2),
@@ -582,15 +630,19 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
           value,
           style: const TextStyle(
             color: Colors.white,
-            fontSize: 28,
+            fontSize: 12,
             fontWeight: FontWeight.w900,
-            letterSpacing: 0.5,
-            shadows: [
-              Shadow(color: Colors.black87, blurRadius: 8, offset: Offset(0, 1.5)),
-            ],
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildMinimalDivider() {
+    return Container(
+      width: 1,
+      height: 20,
+      color: Colors.white12,
     );
   }
 }
@@ -643,9 +695,9 @@ class StravaRoutePainter extends CustomPainter {
       }
     }
 
-    // Shadow line for depth
+    // Shadow line for high contrast over any background photo
     final shadowPaint = Paint()
-      ..color = Colors.black45
+      ..color = Colors.black54
       ..strokeWidth = 5.0
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
