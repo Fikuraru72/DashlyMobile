@@ -193,8 +193,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
                     ),
                     const SizedBox(height: 28),
 
-                    // ── Section: Contact ──────────────────────────
-                    _sectionLabel('Contact Information'),
+                    // ── Section: Personal Information ─────────────────
+                    _sectionLabel('Personal Information'),
                     const SizedBox(height: 12),
 
                     TextFormField(
@@ -202,9 +202,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
                       keyboardType: TextInputType.number,
                       style: TextStyle(color: context.dashlyColors.textPrimary),
                       decoration: DashlyTheme.inputDecoration(context, 
-                        label: 'Phone Number',
+                        label: 'Nomor HP Pribadi',
                         hint: '+62 812 3456 7890',
-                        prefixIcon: Icons.phone_outlined,
+                        prefixIcon: Icons.phone_android_outlined,
                       ),
                       validator: (v) {
                         if (v == null || v.trim().isEmpty) {
@@ -213,7 +213,11 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
                         return null;
                       },
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 24),
+
+                    // ── Section: Emergency Contact ────────────────────
+                    _sectionLabel('Kontak Darurat'),
+                    const SizedBox(height: 12),
 
                     TextFormField(
                       controller: _emergencyNameCtrl,
@@ -258,7 +262,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
                         ),
                       ],
                     ),
-                    const SizedBox(height: 28),
+                    const SizedBox(height: 24),
 
                     // ── Section: Health ───────────────────────────
                     _sectionLabel('Health Information'),

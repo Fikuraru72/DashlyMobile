@@ -246,6 +246,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   decoration: DashlyTheme.inputDecoration(context, label: 'Height (cm)'),
                 ),
                 const SizedBox(height: 16),
+                // Emergency Contact
+                const SizedBox(height: 24),
+                _sectionLabel("EMERGENCY CONTACT"),
+                const SizedBox(height: 12),
                 TextFormField(
                   controller: _emergencyNameCtrl,
                   style: TextStyle(color: context.dashlyColors.textPrimary),
