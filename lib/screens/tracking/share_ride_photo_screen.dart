@@ -12,10 +12,12 @@ import '../../providers/event_provider.dart';
 import '../../theme/dashly_theme.dart';
 
 /// ════════════════════════════════════════════════════════════════
-/// ShareRidePhotoScreen — Strava-Style Cycling Photo Share 📸
+/// ShareRidePhotoScreen — Custom Strava-Style Layout 📸
 /// ════════════════════════════════════════════════════════════════
-/// Combines Dashly's rich 4-metrics glassmorphism card with Strava's
-/// iconic floating orange vector route line drawn directly over the photo.
+/// Custom Layout:
+/// 1. Top Header: Event Name + Dashly Cycling & BIB Badge
+/// 2. Bottom-Left: Compact Cycling Metrics (Dist, Time, Avg, Elev)
+/// 3. Bottom-Right: Floating Orange GPS Route Vector Line
 /// ════════════════════════════════════════════════════════════════
 class ShareRidePhotoScreen extends StatefulWidget {
   final int eventId;
@@ -97,7 +99,7 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
     }
 
     if (_routePoints.isEmpty) {
-      // Stylized fallback cycling loop path
+      // Fallback stylized cycling loop path
       _routePoints = const [
         DashlyLatLng(-7.250, 112.750),
         DashlyLatLng(-7.245, 112.753),
@@ -309,12 +311,12 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 child: Column(
                   children: [
-                    // RepaintBoundary Photo Card
+                    // RepaintBoundary Custom Layout Photo Card
                     RepaintBoundary(
                       key: _globalKey,
                       child: Container(
                         width: double.infinity,
-                        height: 440,
+                        height: 450,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(24),
                           color: context.dashlyColors.surface,
@@ -351,72 +353,81 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
                                   child: Center(
                                     child: Icon(
                                       Icons.directions_bike_rounded,
-                                      size: 110,
+                                      size: 120,
                                       color: context.dashlyColors.accent.withValues(alpha: 0.1),
                                     ),
                                   ),
                                 ),
 
-                              // Subtle Vignette Gradient for Text Contrast
+                              // Subtle Vignette Overlay for High Readability
                               Container(
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
                                     colors: [
-                                      Colors.black.withValues(alpha: 0.5),
+                                      Colors.black.withValues(alpha: 0.6),
                                       Colors.transparent,
-                                      Colors.black.withValues(alpha: 0.75),
+                                      Colors.black.withValues(alpha: 0.8),
                                     ],
                                     begin: Alignment.topCenter,
                                     end: Alignment.bottomCenter,
-                                    stops: const [0.0, 0.45, 1.0],
+                                    stops: const [0.0, 0.4, 1.0],
                                   ),
                                 ),
                               ),
 
-                              // 2. Floating Orange GPS Route Line Trace (Floating directly on photo, NO BOX)
-                              if (_routePoints.isNotEmpty)
-                                Align(
-                                  alignment: Alignment.center,
-                                  child: SizedBox(
-                                    width: 200,
-                                    height: 110,
-                                    child: CustomPaint(
-                                      painter: StravaRoutePainter(
-                                        points: _routePoints,
-                                        routeColor: const Color(0xFFFC5200), // Iconic Strava Orange
-                                      ),
-                                    ),
-                                  ),
-                                ),
-
-                              // 3. Top Header Branding Badge
+                              // 2. [TULISAN NAMA EVENT DI ATAS] Header Section
                               Positioned(
-                                top: 16,
-                                left: 16,
-                                right: 16,
+                                top: 18,
+                                left: 18,
+                                right: 18,
                                 child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    // Dashly Logo Pill
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                      decoration: BoxDecoration(
-                                        color: Colors.black.withValues(alpha: 0.65),
-                                        borderRadius: BorderRadius.circular(16),
-                                        border: Border.all(color: context.dashlyColors.accent.withValues(alpha: 0.5)),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          Icon(Icons.bolt_rounded, size: 13, color: context.dashlyColors.accent),
-                                          const SizedBox(width: 3),
+                                          // Event Name Title
                                           Text(
-                                            "DASHLY CYCLING",
-                                            style: TextStyle(
-                                              color: context.dashlyColors.accent,
+                                            widget.eventName.toUpperCase(),
+                                            style: const TextStyle(
+                                              color: Colors.white,
                                               fontWeight: FontWeight.w900,
-                                              fontSize: 9,
-                                              letterSpacing: 1.0,
+                                              fontSize: 16,
+                                              letterSpacing: 1.2,
+                                              shadows: [
+                                                Shadow(color: Colors.black87, blurRadius: 8, offset: Offset(0, 1)),
+                                              ],
+                                            ),
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          const SizedBox(height: 4),
+
+                                          // Dashly Cycling Badge Pill
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                            decoration: BoxDecoration(
+                                              color: Colors.black.withValues(alpha: 0.6),
+                                              borderRadius: BorderRadius.circular(12),
+                                              border: Border.all(color: context.dashlyColors.accent.withValues(alpha: 0.6)),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(Icons.bolt_rounded, size: 12, color: context.dashlyColors.accent),
+                                                const SizedBox(width: 3),
+                                                Text(
+                                                  "DASHLY CYCLING",
+                                                  style: TextStyle(
+                                                    color: context.dashlyColors.accent,
+                                                    fontWeight: FontWeight.w900,
+                                                    fontSize: 8.5,
+                                                    letterSpacing: 0.8,
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                           ),
                                         ],
@@ -429,7 +440,7 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
                                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                                         decoration: BoxDecoration(
                                           color: Colors.black.withValues(alpha: 0.65),
-                                          borderRadius: BorderRadius.circular(16),
+                                          borderRadius: BorderRadius.circular(14),
                                           border: Border.all(color: Colors.white24),
                                         ),
                                         child: Text(
@@ -437,7 +448,7 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
                                           style: const TextStyle(
                                             color: Colors.white,
                                             fontWeight: FontWeight.bold,
-                                            fontSize: 9,
+                                            fontSize: 9.5,
                                             letterSpacing: 1.0,
                                           ),
                                         ),
@@ -446,15 +457,14 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
                                 ),
                               ),
 
-                              // 4. Sleek Bottom Glassmorphism Stats Card
+                              // 3. [STATS DI TARUH BAWAH KIRI] Compact Vertical Stack Card
                               Positioned(
-                                bottom: 16,
-                                left: 14,
-                                right: 14,
+                                bottom: 18,
+                                left: 18,
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                                   decoration: BoxDecoration(
-                                    color: Colors.black.withValues(alpha: 0.72),
+                                    color: Colors.black.withValues(alpha: 0.65),
                                     borderRadius: BorderRadius.circular(16),
                                     border: Border.all(color: Colors.white12),
                                     boxShadow: [
@@ -468,37 +478,34 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      // Event Name Title
-                                      Text(
-                                        widget.eventName.toUpperCase(),
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w900,
-                                          fontSize: 12,
-                                          letterSpacing: 1.0,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
+                                      _buildSideStatItem(context, "DISTANCE", "${widget.totalDistanceKm.toStringAsFixed(2)} km"),
                                       const SizedBox(height: 8),
-
-                                      // Inline Minimalist Stats Row
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          _buildMinimalStat(context, "DIST", "${widget.totalDistanceKm.toStringAsFixed(2)} km"),
-                                          _buildMinimalDivider(),
-                                          _buildMinimalStat(context, "TIME", _formatDuration(widget.elapsedDuration)),
-                                          _buildMinimalDivider(),
-                                          _buildMinimalStat(context, "AVG", "${widget.avgSpeedKmh.toStringAsFixed(1)} km/h"),
-                                          _buildMinimalDivider(),
-                                          _buildMinimalStat(context, "ELEV", "${widget.elevationGainM.toStringAsFixed(0)} m"),
-                                        ],
-                                      ),
+                                      _buildSideStatItem(context, "TIME", _formatDuration(widget.elapsedDuration)),
+                                      const SizedBox(height: 8),
+                                      _buildSideStatItem(context, "AVG SPEED", "${widget.avgSpeedKmh.toStringAsFixed(1)} km/h"),
+                                      const SizedBox(height: 8),
+                                      _buildSideStatItem(context, "ELEV GAIN", "${widget.elevationGainM.toStringAsFixed(0)} m"),
                                     ],
                                   ),
                                 ),
                               ),
+
+                              // 4. [GAMBAR RUTE DI SEBELAH KANAN BAWAH] Floating Strava Orange GPS Vector Route Line
+                              if (_routePoints.isNotEmpty)
+                                Positioned(
+                                  bottom: 18,
+                                  right: 18,
+                                  child: SizedBox(
+                                    width: 140,
+                                    height: 110,
+                                    child: CustomPaint(
+                                      painter: StravaRoutePainter(
+                                        points: _routePoints,
+                                        routeColor: const Color(0xFFFC5200), // Iconic Strava Orange
+                                      ),
+                                    ),
+                                  ),
+                                ),
                             ],
                           ),
                         ),
@@ -506,7 +513,7 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Photo Selector Controls (Camera vs Gallery)
+                    // Photo Controls (Camera vs Gallery)
                     Row(
                       children: [
                         Expanded(
@@ -612,43 +619,39 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
     );
   }
 
-  Widget _buildMinimalStat(BuildContext context, String label, String value) {
+  Widget _buildSideStatItem(BuildContext context, String label, String value) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           label,
           style: TextStyle(
             color: context.dashlyColors.accent,
-            fontSize: 8,
+            fontSize: 8.5,
             fontWeight: FontWeight.bold,
             letterSpacing: 0.8,
           ),
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: 1),
         Text(
           value,
           style: const TextStyle(
             color: Colors.white,
-            fontSize: 12,
+            fontSize: 13,
             fontWeight: FontWeight.w900,
+            shadows: [
+              Shadow(color: Colors.black87, blurRadius: 4),
+            ],
           ),
         ),
       ],
     );
   }
-
-  Widget _buildMinimalDivider() {
-    return Container(
-      width: 1,
-      height: 20,
-      color: Colors.white12,
-    );
-  }
 }
 
 /// ════════════════════════════════════════════════════════════════
-/// StravaRoutePainter — Iconic Floating Orange GPS Vector Line 🧡
+/// StravaRoutePainter — Floating Orange GPS Vector Route Line 🧡
 /// ════════════════════════════════════════════════════════════════
 class StravaRoutePainter extends CustomPainter {
   final List<DashlyLatLng> points;
@@ -695,7 +698,7 @@ class StravaRoutePainter extends CustomPainter {
       }
     }
 
-    // Shadow line for high contrast over any background photo
+    // Outer Shadow Line for High Readability on Photos
     final shadowPaint = Paint()
       ..color = Colors.black54
       ..strokeWidth = 5.0
