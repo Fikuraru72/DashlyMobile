@@ -526,30 +526,24 @@ class _StatsTrackingScreenState extends State<StatsTrackingScreen> {
   }
 
   Widget _buildMetricsGrid(TrackingProvider tracker, double avgSpeed) {
-    final rankText = tracker.currentRank > 0
-        ? "#${tracker.currentRank}${tracker.totalParticipants > 0 ? ' / ${tracker.totalParticipants}' : ''}"
-        : "-";
-
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
+        // Row 1: Duration & Distance
         Row(
           children: [
             Expanded(child: _buildMetricItem("DURATION", _formatDuration(_stopwatch.elapsed), "")),
             _buildMetricDivider(),
             Expanded(child: _buildMetricItem("DISTANCE", tracker.totalDistance.toStringAsFixed(2), "KM")),
-            _buildMetricDivider(),
-            Expanded(child: _buildMetricItem("ELEV GAIN", tracker.elevationGain.toStringAsFixed(0), "M")),
           ],
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 16),
+        // Row 2: Elevation Gain & Speed
         Row(
           children: [
+            Expanded(child: _buildMetricItem("ELEV GAIN", tracker.elevationGain.toStringAsFixed(0), "M")),
+            _buildMetricDivider(),
             Expanded(child: _buildMetricItem("SPEED", tracker.currentSpeed.toStringAsFixed(1), "KM/H")),
-            _buildMetricDivider(),
-            Expanded(child: _buildMetricItem("AVG SPEED", avgSpeed.toStringAsFixed(1), "KM/H")),
-            _buildMetricDivider(),
-            Expanded(child: _buildMetricItem("RANK", rankText, "")),
           ],
         ),
       ],
