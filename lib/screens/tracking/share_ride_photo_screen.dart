@@ -376,13 +376,33 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
                                 ),
                               ),
 
-                              // 2. Vector Mini GPS Route Line Overlay
+                              // 2. Vector Mini GPS Route Line Overlay (Compact 105x105px Box in Top Right)
                               if (_routePoints.isNotEmpty)
-                                Positioned.fill(
-                                  child: CustomPaint(
-                                    painter: MiniRoutePainter(
-                                      points: _routePoints,
-                                      routeColor: context.dashlyColors.accent,
+                                Positioned(
+                                  top: 52,
+                                  right: 16,
+                                  child: Container(
+                                    width: 105,
+                                    height: 105,
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withValues(alpha: 0.65),
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(color: context.dashlyColors.accent.withValues(alpha: 0.6), width: 1.2),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withValues(alpha: 0.4),
+                                          blurRadius: 10,
+                                        ),
+                                      ],
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(16),
+                                      child: CustomPaint(
+                                        painter: MiniRoutePainter(
+                                          points: _routePoints,
+                                          routeColor: context.dashlyColors.accent,
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -677,17 +697,15 @@ class MiniRoutePainter extends CustomPainter {
     if (lngSpan == 0) lngSpan = 0.0001;
 
     final path = Path();
-    const double paddingHorizontal = 40.0;
-    const double paddingTop = 80.0;
-    const double paddingBottom = 100.0;
+    const double padding = 12.0;
 
-    final drawWidth = size.width - (paddingHorizontal * 2);
-    final drawHeight = size.height - (paddingTop + paddingBottom);
+    final drawWidth = size.width - (padding * 2);
+    final drawHeight = size.height - (padding * 2);
 
     for (int i = 0; i < points.length; i++) {
       final p = points[i];
-      final x = paddingHorizontal + ((p.longitude - minLng) / lngSpan) * drawWidth;
-      final y = paddingTop + (1.0 - ((p.latitude - minLat) / latSpan)) * drawHeight;
+      final x = padding + ((p.longitude - minLng) / lngSpan) * drawWidth;
+      final y = padding + (1.0 - ((p.latitude - minLat) / latSpan)) * drawHeight;
 
       if (i == 0) {
         path.moveTo(x, y);

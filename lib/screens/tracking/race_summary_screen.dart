@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/event_provider.dart';
 import '../../theme/dashly_theme.dart';
-import 'live_map_widget.dart';
 import 'share_ride_photo_screen.dart';
 
 /// ════════════════════════════════════════════════════════════════
@@ -96,28 +95,7 @@ class RaceSummaryScreen extends StatelessWidget {
                 _buildPerformanceDetailCard(context),
                 const SizedBox(height: 16),
 
-                // 4. Interactive Route Map Preview if Available
-                if (effectiveRouteGeojson != null) ...[
-                  _buildSectionLabel(context, "CYCLING ROUTE TRACK"),
-                  const SizedBox(height: 8),
-                  Container(
-                    height: 200,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: context.dashlyColors.divider),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(20),
-                      child: LiveMapWidget(
-                        currentPosition: null,
-                        routeGeojson: effectiveRouteGeojson,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                ],
-
-                // 5. Share to Social Media Button (Strava Style)
+                // 4. Share to Social Media Button (Strava Style)
                 SizedBox(
                   width: double.infinity,
                   height: 54,
@@ -380,21 +358,6 @@ class RaceSummaryScreen extends StatelessWidget {
       width: 1,
       height: 36,
       color: context.dashlyColors.divider.withValues(alpha: 0.4),
-    );
-  }
-
-  Widget _buildSectionLabel(BuildContext context, String label) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Text(
-        label,
-        style: TextStyle(
-          color: context.dashlyColors.textSecondary,
-          fontWeight: FontWeight.bold,
-          fontSize: 11,
-          letterSpacing: 1.5,
-        ),
-      ),
     );
   }
 }
