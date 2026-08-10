@@ -168,6 +168,7 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
 
     try {
       final file = await _captureCardImage();
+      if (file == null) throw Exception("Could not capture image card");
       if (!mounted) return;
       final box = context.findRenderObject() as RenderBox?;
       final Rect? sharePositionOrigin = box != null ? (box.localToGlobal(Offset.zero) & box.size) : null;
