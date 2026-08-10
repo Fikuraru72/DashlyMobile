@@ -19,9 +19,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
   final _heightCtrl = TextEditingController();
   final _emergencyNameCtrl = TextEditingController();
   final _emergencyPhoneCtrl = TextEditingController();
-  final _emergencyRelationCtrl = TextEditingController();
 
   String? _selectedBloodType;
+  String? _selectedEmergencyRelation;
 
   static const _bloodTypes = [
     'A+',
@@ -32,6 +32,14 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
     'AB-',
     'O+',
     'O-',
+  ];
+
+  static const _relations = [
+    'Teman',
+    'Saudara',
+    'Orang Tua',
+    'Suami/Istri',
+    'Anak',
   ];
 
   late AnimationController _fadeController;
@@ -67,7 +75,6 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
     _heightCtrl.dispose();
     _emergencyNameCtrl.dispose();
     _emergencyPhoneCtrl.dispose();
-    _emergencyRelationCtrl.dispose();
     super.dispose();
   }
 
@@ -85,9 +92,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
       emergencyPhone: _emergencyPhoneCtrl.text.trim().isEmpty
           ? null
           : _emergencyPhoneCtrl.text.trim(),
-      emergencyRelation: _emergencyRelationCtrl.text.trim().isEmpty
-          ? null
-          : _emergencyRelationCtrl.text.trim(),
+      emergencyRelation: _selectedEmergencyRelation,
     );
 
     final success = await auth.completeProfile(
@@ -223,13 +228,20 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
                     Row(
                       children: [
                         Expanded(
-                          child: TextFormField(
-                            controller: _emergencyRelationCtrl,
+                          child: DropdownButtonFormField<String>(
+                            value: _selectedEmergencyRelation,
+                            dropdownColor: context.dashlyColors.surfaceLight,
                             style: TextStyle(color: context.dashlyColors.textPrimary),
                             decoration: DashlyTheme.inputDecoration(context, 
                               label: 'Hubungan',
-                              hint: 'Orang Tua / Spouse',
                             ),
+                            items: _relations
+                                .map((r) => DropdownMenuItem(
+                                      value: r,
+                                      child: Text(r),
+                                    ))
+                                .toList(),
+                            onChanged: (v) => setState(() => _selectedEmergencyRelation = v),
                           ),
                         ),
                         const SizedBox(width: 12),

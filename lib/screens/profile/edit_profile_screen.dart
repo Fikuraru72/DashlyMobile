@@ -22,15 +22,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _heightCtrl;
   late TextEditingController _emergencyNameCtrl;
   late TextEditingController _emergencyPhoneCtrl;
-  late TextEditingController _emergencyRelationCtrl;
   late TextEditingController _medicalHistoryCtrl;
   late TextEditingController _passwordCtrl;
 
   String? _selectedBloodType;
+  String? _selectedEmergencyRelation;
   String? _avatarBase64;
   
   static const _bloodTypes = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
-  static const _relations = ['Orang Tua', 'Suami/Istri', 'Saudara', 'Teman', 'Lainnya'];
+  static const _relations = ['Teman', 'Saudara', 'Orang Tua', 'Suami/Istri', 'Anak'];
   final ImagePicker _picker = ImagePicker();
 
   @override
@@ -43,10 +43,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _heightCtrl = TextEditingController(text: user?.healthInfo?.height?.toString() ?? '');
     _emergencyNameCtrl = TextEditingController(text: user?.healthInfo?.emergencyName ?? '');
     _emergencyPhoneCtrl = TextEditingController(text: user?.healthInfo?.emergencyPhone ?? user?.healthInfo?.emergencyContact ?? '');
-    _emergencyRelationCtrl = TextEditingController(text: user?.healthInfo?.emergencyRelation ?? '');
     _medicalHistoryCtrl = TextEditingController(text: user?.healthInfo?.medicalHistory ?? '');
     _passwordCtrl = TextEditingController();
     _selectedBloodType = user?.healthInfo?.bloodType;
+    final rel = user?.healthInfo?.emergencyRelation;
+    _selectedEmergencyRelation = (rel != null && _relations.contains(rel)) ? rel : null;
     _avatarBase64 = user?.avatar;
   }
 
@@ -58,7 +59,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _heightCtrl.dispose();
     _emergencyNameCtrl.dispose();
     _emergencyPhoneCtrl.dispose();
-    _emergencyRelationCtrl.dispose();
     _medicalHistoryCtrl.dispose();
     _passwordCtrl.dispose();
     super.dispose();
@@ -97,7 +97,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       height: double.tryParse(_heightCtrl.text.trim()),
       emergencyName: _emergencyNameCtrl.text.trim().isEmpty ? null : _emergencyNameCtrl.text.trim(),
       emergencyPhone: _emergencyPhoneCtrl.text.trim().isEmpty ? null : _emergencyPhoneCtrl.text.trim(),
-      emergencyRelation: _emergencyRelationCtrl.text.trim().isEmpty ? null : _emergencyRelationCtrl.text.trim(),
+      emergencyRelation: _selectedEmergencyRelation,
       medicalHistory: _medicalHistoryCtrl.text.trim().isEmpty ? null : _medicalHistoryCtrl.text.trim(),
     );
 
@@ -256,10 +256,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   children: [
                     Expanded(
                       flex: 1,
-                      child: TextFormField(
-                        controller: _emergencyRelationCtrl,
+                      child: DropdownButtonFormField<String>(
+                        value: _selectedEmergencyRelation,
+                        dropdownColor: context.dashlyColors.surface,
                         style: TextStyle(color: context.dashlyColors.textPrimary),
-                        decoration: DashlyTheme.inputDecoration(context, label: 'Hubungan (misal: Orang Tua)'),
+                        decoration: DashlyTheme.inputDecoration(context, label: 'Hubungan'),
+                        items: _relations.map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
+                        onChanged: (v) => setState(() => _selectedEmergencyRelation = v),
                       ),
                     ),
                     const SizedBox(width: 16),
