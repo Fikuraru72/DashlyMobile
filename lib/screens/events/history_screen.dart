@@ -311,6 +311,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           avgSpeedKmh: 28.5,
                           maxSpeedKmh: 42.0,
                           elevationGainM: (event.totalElevationMeters ?? 250).toDouble(),
+                          routeGeojson: event.routeGeojson,
                         ),
                       ),
                     );

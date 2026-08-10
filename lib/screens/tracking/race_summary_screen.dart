@@ -23,6 +23,7 @@ class RaceSummaryScreen extends StatelessWidget {
   final double elevationGainM;
   final int finalRank;
   final int totalParticipants;
+  final Map<String, dynamic>? routeGeojson;
 
   const RaceSummaryScreen({
     super.key,
@@ -35,6 +36,7 @@ class RaceSummaryScreen extends StatelessWidget {
     required this.elevationGainM,
     this.finalRank = 0,
     this.totalParticipants = 0,
+    this.routeGeojson,
   });
 
   String _formatDuration(Duration duration) {
@@ -52,6 +54,8 @@ class RaceSummaryScreen extends StatelessWidget {
     final String bibText = (currentEvent != null && currentEvent.bibNumber != null)
         ? " • BIB #${currentEvent.bibNumber}"
         : "";
+
+    final effectiveRouteGeojson = routeGeojson ?? currentEvent?.routeGeojson;
 
     return PopScope(
       canPop: true,
@@ -93,7 +97,7 @@ class RaceSummaryScreen extends StatelessWidget {
                 const SizedBox(height: 16),
 
                 // 4. Interactive Route Map Preview if Available
-                if (currentEvent?.routeGeojson != null) ...[
+                if (effectiveRouteGeojson != null) ...[
                   _buildSectionLabel(context, "CYCLING ROUTE TRACK"),
                   const SizedBox(height: 8),
                   Container(
@@ -106,7 +110,7 @@ class RaceSummaryScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(20),
                       child: LiveMapWidget(
                         currentPosition: null,
-                        routeGeojson: currentEvent?.routeGeojson,
+                        routeGeojson: effectiveRouteGeojson,
                       ),
                     ),
                   ),
@@ -130,7 +134,7 @@ class RaceSummaryScreen extends StatelessWidget {
                             avgSpeedKmh: avgSpeedKmh,
                             maxSpeedKmh: maxSpeedKmh,
                             elevationGainM: elevationGainM,
-                            routeGeojson: currentEvent?.routeGeojson,
+                            routeGeojson: effectiveRouteGeojson,
                           ),
                         ),
                       );
