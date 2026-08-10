@@ -25,11 +25,13 @@ class EventListProvider extends ChangeNotifier {
     events.sort((a, b) => b.dateEvent.compareTo(a.dateEvent));
   }
 
-  Future<void> loadExploreEvents() async {
+  Future<void> loadExploreEvents({bool isSilent = false}) async {
     _page = 1;
     _hasMore = true;
-    _isLoadingExplore = true;
-    notifyListeners();
+    if (!isSilent && _exploreEvents.isEmpty) {
+      _isLoadingExplore = true;
+      notifyListeners();
+    }
     
     final events = await _eventService.getExploreEvents();
     if (events != null) {

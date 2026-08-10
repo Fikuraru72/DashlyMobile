@@ -34,9 +34,9 @@ class _MainNavigationState extends State<MainNavigation> {
 
   void _onItemTapped(int index) {
     if (index == 0 || index == 2) {
-      context.read<EventProvider>().loadMyEvents();
+      context.read<EventProvider>().loadMyEvents(isSilent: true);
     } else if (index == 1) {
-      context.read<EventListProvider>().loadExploreEvents();
+      context.read<EventListProvider>().loadExploreEvents(isSilent: true);
       context.read<EventListProvider>().loadMyEventsForMerge();
     }
     setState(() {

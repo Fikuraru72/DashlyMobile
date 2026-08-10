@@ -36,22 +36,27 @@ class EventProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> loadMyEvents() async {
-    _isLoadingMyEvents = true;
-    _myEventsError = null;
-    notifyListeners();
+  Future<void> loadMyEvents({bool isSilent = false}) async {
+    if (!isSilent && _myEvents.isEmpty) {
+      _isLoadingMyEvents = true;
+      _myEventsError = null;
+      notifyListeners();
+    }
 
     try {
       final events = await _eventService.getMyEvents();
       if (events != null) {
         _myEvents = events;
-      } else {
+        _myEventsError = null;
+      } else if (_myEvents.isEmpty) {
         _myEventsError = 'Failed to load your events.';
         _myEvents = [];
       }
     } catch (e) {
-      _myEventsError = e.toString();
-      _myEvents = [];
+      if (_myEvents.isEmpty) {
+        _myEventsError = e.toString();
+        _myEvents = [];
+      }
     } finally {
       _isLoadingMyEvents = false;
       notifyListeners();
