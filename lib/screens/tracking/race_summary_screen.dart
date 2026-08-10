@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/event_provider.dart';
 import '../../theme/dashly_theme.dart';
 import 'live_map_widget.dart';
+import 'share_ride_photo_screen.dart';
 
 /// ════════════════════════════════════════════════════════════════
 /// RaceSummaryScreen — Post-Race Cycling Summary Screen 🏆
@@ -112,7 +113,46 @@ class RaceSummaryScreen extends StatelessWidget {
                   const SizedBox(height: 20),
                 ],
 
-                // 5. Back to My Events Button
+                // 5. Share to Social Media Button (Strava Style)
+                SizedBox(
+                  width: double.infinity,
+                  height: 54,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ShareRidePhotoScreen(
+                            eventId: eventId,
+                            eventName: eventName,
+                            elapsedDuration: elapsedDuration,
+                            totalDistanceKm: totalDistanceKm,
+                            avgSpeedKmh: avgSpeedKmh,
+                            maxSpeedKmh: maxSpeedKmh,
+                            elevationGainM: elevationGainM,
+                          ),
+                        ),
+                      );
+                    },
+                    icon: Icon(Icons.camera_alt_rounded, color: context.dashlyColors.accent),
+                    label: const Text(
+                      "SHARE TO SOCIAL MEDIA",
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.2,
+                        fontSize: 14,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: context.dashlyColors.accent,
+                      side: BorderSide(color: context.dashlyColors.accent, width: 1.5),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // 6. Back to My Events Button
                 SizedBox(
                   width: double.infinity,
                   height: 54,
@@ -121,17 +161,17 @@ class RaceSummaryScreen extends StatelessWidget {
                       Navigator.of(context).popUntil((route) => route.isFirst);
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: context.dashlyColors.accent,
-                      foregroundColor: Colors.black,
+                      backgroundColor: context.dashlyColors.surfaceLight,
+                      foregroundColor: context.dashlyColors.textPrimary,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      elevation: 6,
+                      borderSide: BorderSide(color: context.dashlyColors.divider),
                     ),
                     child: const Text(
                       "BACK TO MY EVENTS",
                       style: TextStyle(
                         fontWeight: FontWeight.w900,
                         letterSpacing: 1.5,
-                        fontSize: 15,
+                        fontSize: 14,
                       ),
                     ),
                   ),
