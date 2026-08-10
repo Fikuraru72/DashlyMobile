@@ -20,7 +20,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _phoneCtrl;
   late TextEditingController _weightCtrl;
   late TextEditingController _heightCtrl;
-  late TextEditingController _emergencyCtrl;
+  late TextEditingController _emergencyNameCtrl;
+  late TextEditingController _emergencyPhoneCtrl;
+  late TextEditingController _emergencyRelationCtrl;
   late TextEditingController _medicalHistoryCtrl;
   late TextEditingController _passwordCtrl;
 
@@ -28,6 +30,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   String? _avatarBase64;
   
   static const _bloodTypes = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+  static const _relations = ['Orang Tua', 'Suami/Istri', 'Saudara', 'Teman', 'Lainnya'];
   final ImagePicker _picker = ImagePicker();
 
   @override
@@ -38,7 +41,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _phoneCtrl = TextEditingController(text: user?.phone ?? '');
     _weightCtrl = TextEditingController(text: user?.healthInfo?.weight?.toString() ?? '');
     _heightCtrl = TextEditingController(text: user?.healthInfo?.height?.toString() ?? '');
-    _emergencyCtrl = TextEditingController(text: user?.healthInfo?.emergencyContact ?? '');
+    _emergencyNameCtrl = TextEditingController(text: user?.healthInfo?.emergencyName ?? '');
+    _emergencyPhoneCtrl = TextEditingController(text: user?.healthInfo?.emergencyPhone ?? user?.healthInfo?.emergencyContact ?? '');
+    _emergencyRelationCtrl = TextEditingController(text: user?.healthInfo?.emergencyRelation ?? '');
     _medicalHistoryCtrl = TextEditingController(text: user?.healthInfo?.medicalHistory ?? '');
     _passwordCtrl = TextEditingController();
     _selectedBloodType = user?.healthInfo?.bloodType;
@@ -51,7 +56,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _phoneCtrl.dispose();
     _weightCtrl.dispose();
     _heightCtrl.dispose();
-    _emergencyCtrl.dispose();
+    _emergencyNameCtrl.dispose();
+    _emergencyPhoneCtrl.dispose();
+    _emergencyRelationCtrl.dispose();
     _medicalHistoryCtrl.dispose();
     _passwordCtrl.dispose();
     super.dispose();
@@ -88,7 +95,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       bloodType: _selectedBloodType,
       weight: double.tryParse(_weightCtrl.text.trim()),
       height: double.tryParse(_heightCtrl.text.trim()),
-      emergencyContact: _emergencyCtrl.text.trim().isEmpty ? null : _emergencyCtrl.text.trim(),
+      emergencyName: _emergencyNameCtrl.text.trim().isEmpty ? null : _emergencyNameCtrl.text.trim(),
+      emergencyPhone: _emergencyPhoneCtrl.text.trim().isEmpty ? null : _emergencyPhoneCtrl.text.trim(),
+      emergencyRelation: _emergencyRelationCtrl.text.trim().isEmpty ? null : _emergencyRelationCtrl.text.trim(),
       medicalHistory: _medicalHistoryCtrl.text.trim().isEmpty ? null : _medicalHistoryCtrl.text.trim(),
     );
 
@@ -108,6 +117,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       );
       Navigator.pop(context);
     } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(auth.errorMessage ?? 'Failed to update profile'), backgroundColor: context.dashlyColors.error),
+      );
+    }
+  }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(auth.errorMessage ?? 'Failed to update profile'), backgroundColor: context.dashlyColors.error),
       );
@@ -238,19 +252,41 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
-                  controller: _emergencyCtrl,
-                  keyboardType: TextInputType.number,
+                  controller: _emergencyNameCtrl,
                   style: TextStyle(color: context.dashlyColors.textPrimary),
-                  decoration: DashlyTheme.inputDecoration(context, label: 'Emergency Contact'),
-                  validator: (v) {
-                    if (v != null && v.trim().isNotEmpty) {
-                      final cleanV = v.trim().replaceAll(' ', '');
-                      if (!RegExp(r'^\+?[0-9]{9,15}$').hasMatch(cleanV)) {
-                        return 'Enter a valid phone number';
-                      }
-                    }
-                    return null;
-                  },
+                  decoration: DashlyTheme.inputDecoration(context, label: 'Nama Kontak Darurat', prefixIcon: Icons.person_search_outlined),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      flex: 1,
+                      child: TextFormField(
+                        controller: _emergencyRelationCtrl,
+                        style: TextStyle(color: context.dashlyColors.textPrimary),
+                        decoration: DashlyTheme.inputDecoration(context, label: 'Hubungan (misal: Orang Tua)'),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      flex: 1,
+                      child: TextFormField(
+                        controller: _emergencyPhoneCtrl,
+                        keyboardType: TextInputType.number,
+                        style: TextStyle(color: context.dashlyColors.textPrimary),
+                        decoration: DashlyTheme.inputDecoration(context, label: 'No. HP Darurat'),
+                        validator: (v) {
+                          if (v != null && v.trim().isNotEmpty) {
+                            final cleanV = v.trim().replaceAll(' ', '');
+                            if (!RegExp(r'^\+?[0-9]{9,15}$').hasMatch(cleanV)) {
+                              return 'Enter a valid phone number';
+                            }
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 16),
                 TextFormField(

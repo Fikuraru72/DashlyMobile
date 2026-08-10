@@ -3,6 +3,9 @@ class HealthInfo {
   final String? bloodType;
   final double? weight;
   final double? height;
+  final String? emergencyName;
+  final String? emergencyPhone;
+  final String? emergencyRelation;
   final String? emergencyContact;
   final String? medicalHistory;
 
@@ -10,6 +13,9 @@ class HealthInfo {
     this.bloodType,
     this.weight,
     this.height,
+    this.emergencyName,
+    this.emergencyPhone,
+    this.emergencyRelation,
     this.emergencyContact,
     this.medicalHistory,
   });
@@ -18,6 +24,9 @@ class HealthInfo {
         bloodType: json['bloodType'] as String?,
         weight: (json['weight'] as num?)?.toDouble(),
         height: (json['height'] as num?)?.toDouble(),
+        emergencyName: json['emergencyName'] as String?,
+        emergencyPhone: json['emergencyPhone'] as String?,
+        emergencyRelation: json['emergencyRelation'] as String?,
         emergencyContact: json['emergencyContact'] as String?,
         medicalHistory: json['medicalHistory'] as String?,
       );
@@ -26,14 +35,33 @@ class HealthInfo {
         'bloodType': bloodType,
         'weight': weight,
         'height': height,
-        'emergencyContact': emergencyContact,
+        'emergencyName': emergencyName,
+        'emergencyPhone': emergencyPhone,
+        'emergencyRelation': emergencyRelation,
+        'emergencyContact': formattedEmergencyContact,
         'medicalHistory': medicalHistory,
       };
+
+  String get formattedEmergencyContact {
+    if ((emergencyName != null && emergencyName!.isNotEmpty) ||
+        (emergencyPhone != null && emergencyPhone!.isNotEmpty) ||
+        (emergencyRelation != null && emergencyRelation!.isNotEmpty)) {
+      final parts = <String>[];
+      if (emergencyName != null && emergencyName!.isNotEmpty) parts.add(emergencyName!);
+      if (emergencyRelation != null && emergencyRelation!.isNotEmpty) parts.add('($emergencyRelation)');
+      if (emergencyPhone != null && emergencyPhone!.isNotEmpty) parts.add('- $emergencyPhone');
+      if (parts.isNotEmpty) return parts.join(' ');
+    }
+    return emergencyContact ?? 'Not set';
+  }
 
   HealthInfo copyWith({
     String? bloodType,
     double? weight,
     double? height,
+    String? emergencyName,
+    String? emergencyPhone,
+    String? emergencyRelation,
     String? emergencyContact,
     String? medicalHistory,
   }) =>
@@ -41,6 +69,9 @@ class HealthInfo {
         bloodType: bloodType ?? this.bloodType,
         weight: weight ?? this.weight,
         height: height ?? this.height,
+        emergencyName: emergencyName ?? this.emergencyName,
+        emergencyPhone: emergencyPhone ?? this.emergencyPhone,
+        emergencyRelation: emergencyRelation ?? this.emergencyRelation,
         emergencyContact: emergencyContact ?? this.emergencyContact,
         medicalHistory: medicalHistory ?? this.medicalHistory,
       );

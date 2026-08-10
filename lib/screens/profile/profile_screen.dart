@@ -192,7 +192,7 @@ class ProfileScreen extends StatelessWidget {
           _buildHealthItem(context, "BLOOD TYPE", info?.bloodType ?? "Not set"),
           _buildHealthItem(context, "WEIGHT", info?.weight != null ? "${info!.weight} kg" : "Not set"),
           _buildHealthItem(context, "HEIGHT", info?.height != null ? "${info!.height} cm" : "Not set"),
-          _buildHealthItem(context, "EMERGENCY", info?.emergencyContact ?? "Not set"),
+          _buildHealthItem(context, "EMERGENCY", info?.formattedEmergencyContact ?? "Not set"),
         ],
       ),
     );

@@ -17,7 +17,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
   final _phoneCtrl = TextEditingController();
   final _weightCtrl = TextEditingController();
   final _heightCtrl = TextEditingController();
-  final _emergencyCtrl = TextEditingController();
+  final _emergencyNameCtrl = TextEditingController();
+  final _emergencyPhoneCtrl = TextEditingController();
+  final _emergencyRelationCtrl = TextEditingController();
 
   String? _selectedBloodType;
 
@@ -63,7 +65,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
     _phoneCtrl.dispose();
     _weightCtrl.dispose();
     _heightCtrl.dispose();
-    _emergencyCtrl.dispose();
+    _emergencyNameCtrl.dispose();
+    _emergencyPhoneCtrl.dispose();
+    _emergencyRelationCtrl.dispose();
     super.dispose();
   }
 
@@ -75,9 +79,15 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
       bloodType: _selectedBloodType,
       weight: double.tryParse(_weightCtrl.text.trim()),
       height: double.tryParse(_heightCtrl.text.trim()),
-      emergencyContact: _emergencyCtrl.text.trim().isEmpty
+      emergencyName: _emergencyNameCtrl.text.trim().isEmpty
           ? null
-          : _emergencyCtrl.text.trim(),
+          : _emergencyNameCtrl.text.trim(),
+      emergencyPhone: _emergencyPhoneCtrl.text.trim().isEmpty
+          ? null
+          : _emergencyPhoneCtrl.text.trim(),
+      emergencyRelation: _emergencyRelationCtrl.text.trim().isEmpty
+          ? null
+          : _emergencyRelationCtrl.text.trim(),
     );
 
     final success = await auth.completeProfile(
@@ -201,14 +211,40 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
                     const SizedBox(height: 16),
 
                     TextFormField(
-                      controller: _emergencyCtrl,
-                      keyboardType: TextInputType.number,
+                      controller: _emergencyNameCtrl,
                       style: TextStyle(color: context.dashlyColors.textPrimary),
                       decoration: DashlyTheme.inputDecoration(context, 
-                        label: 'Emergency Contact',
-                        hint: '+62 812 0000 0000',
+                        label: 'Nama Kontak Darurat',
+                        hint: 'Nama lengkap kontak darurat',
                         prefixIcon: Icons.emergency_outlined,
                       ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _emergencyRelationCtrl,
+                            style: TextStyle(color: context.dashlyColors.textPrimary),
+                            decoration: DashlyTheme.inputDecoration(context, 
+                              label: 'Hubungan',
+                              hint: 'Orang Tua / Spouse',
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _emergencyPhoneCtrl,
+                            keyboardType: TextInputType.number,
+                            style: TextStyle(color: context.dashlyColors.textPrimary),
+                            decoration: DashlyTheme.inputDecoration(context, 
+                              label: 'No. HP Darurat',
+                              hint: '0812...',
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 28),
 
