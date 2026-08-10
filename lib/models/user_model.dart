@@ -72,8 +72,9 @@ class User {
         email: json['email'] as String,
         phone: json['phone'] as String?,
         avatar: json['avatar'] as String?,
-        healthInfo: json['healthInfo'] != null
-            ? HealthInfo.fromJson(json['healthInfo'] as Map<String, dynamic>)
+        healthInfo: (json['healthProfile'] != null || json['healthInfo'] != null)
+            ? HealthInfo.fromJson(
+                (json['healthProfile'] ?? json['healthInfo']) as Map<String, dynamic>)
             : null,
         role: json['role'] as String?,
       );
