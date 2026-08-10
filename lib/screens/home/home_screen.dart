@@ -6,7 +6,7 @@ import '../../providers/dashboard_provider.dart';
 import '../../providers/event_provider.dart';
 import '../../models/event_model.dart';
 import '../../theme/dashly_theme.dart';
-import '../tracking/race_interlock_screen.dart';
+import '../tracking/tracking_mode_dialog.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -277,16 +277,7 @@ class _HomeScreenState extends State<HomeScreen> {
     bool isTracking = event.participantState == ParticipantState.tracking;
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => RaceInterlockScreen(
-              eventId: event.id,
-              eventName: event.name,
-              category: event.category.name,
-            ),
-          ),
-        );
+        showTrackingModeSelectionDialog(context, eventId: event.id, eventName: event.name);
       },
       child: Container(
         width: double.infinity,

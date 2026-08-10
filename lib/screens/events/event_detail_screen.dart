@@ -7,7 +7,7 @@ import '../../models/event_model.dart';
 import '../../providers/event_list_provider.dart';
 import '../../providers/event_provider.dart';
 import '../../theme/dashly_theme.dart';
-import '../tracking/race_interlock_screen.dart';
+import '../tracking/tracking_mode_dialog.dart';
 
 class EventDetailScreen extends StatelessWidget {
   final Event event;
@@ -408,16 +408,7 @@ class EventDetailScreen extends StatelessWidget {
     // Already registered -> Enter Race
     return ElevatedButton(
       onPressed: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => RaceInterlockScreen(
-              eventId: event.id,
-              eventName: event.name,
-              category: event.category == EventCategory.cycling ? 'CYCLING' : 'RUNNING',
-            ),
-          ),
-        );
+        showTrackingModeSelectionDialog(context, eventId: event.id, eventName: event.name);
       },
       style: ElevatedButton.styleFrom(
         backgroundColor: context.dashlyColors.accent,

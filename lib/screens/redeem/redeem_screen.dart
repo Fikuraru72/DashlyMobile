@@ -3,9 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/event_provider.dart';
 import '../../providers/event_list_provider.dart';
-import '../../models/event_model.dart';
 import '../../theme/dashly_theme.dart';
-import '../tracking/race_interlock_screen.dart';
+import '../tracking/tracking_mode_dialog.dart';
 
 /// ════════════════════════════════════════════════════════════════
 /// RedeemScreen — Join Event via Manual Token
@@ -46,16 +45,10 @@ class _RedeemScreenState extends State<RedeemScreen> {
       context.read<EventListProvider>().loadExploreEvents();
       context.read<EventListProvider>().loadMyEventsForMerge();
       _showSnack(result['message'] ?? 'Successfully joined!', false);
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => RaceInterlockScreen(
-            eventId: result['eventId'],
-            eventName: result['eventName'] ?? 'Event',
-            category: result['category'] == 'CYCLING' ? 'CYCLING' : 'RUNNING',
-          ),
-        ),
-      );
+      final eventId = result['eventId'] is int ? result['eventId'] as int : int.tryParse(result['eventId']?.toString() ?? '') ?? 0;
+      final eventName = result['eventName'] ?? 'Event';
+      Navigator.pop(context);
+      showTrackingModeSelectionDialog(context, eventId: eventId, eventName: eventName);
     } else {
       debugPrint('[RedeemScreen] ❌ Failed: ${provider.errorMessage}');
       _showSnack(provider.errorMessage ?? 'Failed to join event', true);

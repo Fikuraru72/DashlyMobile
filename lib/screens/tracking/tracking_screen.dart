@@ -44,9 +44,21 @@ class _TrackingScreenState extends State<TrackingScreen> {
       if (mounted) setState(() {});
     });
 
-    // Ensure event details & altitude profile are fetched upon screen open
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       context.read<EventProvider>().fetchEvent(widget.eventId);
+      
+      final tracker = context.read<TrackingProvider>();
+      if (!tracker.isTracking) {
+        final userId = context.read<AuthProvider>().currentUser?.id ?? 0;
+        try {
+          await tracker.startTracking(widget.eventId, userId);
+          _stopwatch.start();
+        } catch (e) {
+          debugPrint('TrackingScreen: Failed to auto start tracking: $e');
+        }
+      } else {
+        _stopwatch.start();
+      }
     });
   }
 
