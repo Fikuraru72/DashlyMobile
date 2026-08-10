@@ -107,7 +107,9 @@ class User {
             ? HealthInfo.fromJson(
                 (json['healthProfile'] ?? json['healthInfo']) as Map<String, dynamic>)
             : null,
-        role: json['role'] as String?,
+        role: json['role'] is String
+            ? json['role'] as String
+            : (json['role'] is Map ? (json['role']['name'] as String?) : null),
       );
 
   Map<String, dynamic> toJson() => {
