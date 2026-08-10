@@ -136,7 +136,7 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    "Card saved to Pictures/Gallery! 💾",
+                    "Card saved to ${targetDir.path.contains('Pictures') ? 'Pictures/Dashly' : 'Documents'}! 💾",
                     style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
                   ),
                 ),
