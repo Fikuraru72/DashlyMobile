@@ -46,7 +46,13 @@ class ProfileScreen extends StatelessWidget {
             ]),
             const SizedBox(height: 24),
 
-            // Health Info Section (Req #14)
+            // Emergency Contact Section
+            _buildSectionHeader(context, "EMERGENCY CONTACT"),
+            const SizedBox(height: 12),
+            _buildEmergencyCard(context, user.healthInfo),
+            const SizedBox(height: 24),
+
+            // Health Info Section
             _buildSectionHeader(context, "ATHLETE HEALTH INFO"),
             const SizedBox(height: 12),
             _buildHealthGrid(context, user.healthInfo),
@@ -173,6 +179,27 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildEmergencyCard(BuildContext context, HealthInfo? info) {
+    final name = info?.emergencyName ?? 'Not set';
+    final relation = info?.emergencyRelation ?? 'Not set';
+    final phone = info?.emergencyPhone ?? info?.emergencyContact ?? 'Not set';
+
+    return Container(
+      decoration: BoxDecoration(
+        color: context.dashlyColors.surface,
+        borderRadius: DashlyTheme.radiusMd,
+        border: Border.all(color: context.dashlyColors.divider, width: 1),
+      ),
+      child: Column(
+        children: [
+          _buildListTile(context, Icons.person_search_outlined, "Nama Kontak", name),
+          _buildListTile(context, Icons.people_outline_rounded, "Hubungan", relation),
+          _buildListTile(context, Icons.phone_in_talk_outlined, "No. HP Darurat", phone),
+        ],
+      ),
+    );
+  }
+
   Widget _buildHealthGrid(BuildContext context, HealthInfo? info) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -184,15 +211,14 @@ class ProfileScreen extends StatelessWidget {
       child: GridView.count(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-        crossAxisCount: 2,
-        childAspectRatio: 2.2,
+        crossAxisCount: 3,
+        childAspectRatio: 1.5,
         mainAxisSpacing: 16,
         crossAxisSpacing: 16,
         children: [
           _buildHealthItem(context, "BLOOD TYPE", info?.bloodType ?? "Not set"),
           _buildHealthItem(context, "WEIGHT", info?.weight != null ? "${info!.weight} kg" : "Not set"),
           _buildHealthItem(context, "HEIGHT", info?.height != null ? "${info!.height} cm" : "Not set"),
-          _buildHealthItem(context, "EMERGENCY", info?.formattedEmergencyContact ?? "Not set"),
         ],
       ),
     );

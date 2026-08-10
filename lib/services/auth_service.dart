@@ -232,10 +232,20 @@ class AuthService {
     required String name,
     required String email,
     required String password,
+    String? phone,
   }) async {
+    final Map<String, dynamic> body = {
+      'name': name,
+      'email': email,
+      'password': password,
+    };
+    if (phone != null && phone.isNotEmpty) {
+      body['phone'] = phone;
+    }
+
     final response = await _dio.post(
       '/auth/register',
-      data: {'name': name, 'email': email, 'password': password},
+      data: body,
     );
 
     final data = response.data as Map<String, dynamic>;

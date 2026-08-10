@@ -97,6 +97,7 @@ class AuthProvider extends ChangeNotifier {
     required String name,
     required String email,
     required String password,
+    String? phone,
   }) async {
     _setLoading(true);
     _errorMessage = null;
@@ -105,6 +106,7 @@ class AuthProvider extends ChangeNotifier {
         name: name,
         email: email,
         password: password,
+        phone: phone,
       );
       _currentUser = User.fromJson(data['user'] as Map<String, dynamic>);
       _setLoading(false);

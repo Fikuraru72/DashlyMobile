@@ -14,7 +14,6 @@ class ProfileSetupScreen extends StatefulWidget {
 class _ProfileSetupScreenState extends State<ProfileSetupScreen>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
-  final _phoneCtrl = TextEditingController();
   final _weightCtrl = TextEditingController();
   final _heightCtrl = TextEditingController();
   final _emergencyNameCtrl = TextEditingController();
@@ -70,7 +69,6 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
   @override
   void dispose() {
     _fadeController.dispose();
-    _phoneCtrl.dispose();
     _weightCtrl.dispose();
     _heightCtrl.dispose();
     _emergencyNameCtrl.dispose();
@@ -82,6 +80,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
     if (!_formKey.currentState!.validate()) return;
 
     final auth = context.read<AuthProvider>();
+    final user = auth.currentUser;
     final healthInfo = HealthInfo(
       bloodType: _selectedBloodType,
       weight: double.tryParse(_weightCtrl.text.trim()),
@@ -96,7 +95,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
     );
 
     final success = await auth.completeProfile(
-      phone: _phoneCtrl.text.trim(),
+      phone: user?.phone ?? '',
       healthInfo: healthInfo,
     );
 
@@ -192,28 +191,6 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen>
                       ),
                     ),
                     const SizedBox(height: 28),
-
-                    // ── Section: Personal Information ─────────────────
-                    _sectionLabel('Personal Information'),
-                    const SizedBox(height: 12),
-
-                    TextFormField(
-                      controller: _phoneCtrl,
-                      keyboardType: TextInputType.number,
-                      style: TextStyle(color: context.dashlyColors.textPrimary),
-                      decoration: DashlyTheme.inputDecoration(context, 
-                        label: 'Nomor HP Pribadi',
-                        hint: '+62 812 3456 7890',
-                        prefixIcon: Icons.phone_android_outlined,
-                      ),
-                      validator: (v) {
-                        if (v == null || v.trim().isEmpty) {
-                          return 'Phone number is required';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 24),
 
                     // ── Section: Emergency Contact ────────────────────
                     _sectionLabel('Kontak Darurat'),

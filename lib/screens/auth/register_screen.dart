@@ -16,6 +16,7 @@ class _RegisterScreenState extends State<RegisterScreen>
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   final _confirmCtrl = TextEditingController();
   bool _obscurePassword = true;
@@ -51,6 +52,7 @@ class _RegisterScreenState extends State<RegisterScreen>
     _fadeController.dispose();
     _nameCtrl.dispose();
     _emailCtrl.dispose();
+    _phoneCtrl.dispose();
     _passwordCtrl.dispose();
     _confirmCtrl.dispose();
     super.dispose();
@@ -63,6 +65,7 @@ class _RegisterScreenState extends State<RegisterScreen>
     final success = await auth.register(
       name: _nameCtrl.text.trim(),
       email: _emailCtrl.text.trim(),
+      phone: _phoneCtrl.text.trim(),
       password: _passwordCtrl.text,
     );
 
@@ -162,6 +165,29 @@ class _RegisterScreenState extends State<RegisterScreen>
                           }
                           if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(v)) {
                             return 'Enter a valid email';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+
+                      // ── Phone Number ────────────────────────────
+                      TextFormField(
+                        controller: _phoneCtrl,
+                        keyboardType: TextInputType.number,
+                        style: TextStyle(color: context.dashlyColors.textPrimary),
+                        decoration: DashlyTheme.inputDecoration(context, 
+                          label: 'Phone Number',
+                          hint: '+62 812 3456 7890',
+                          prefixIcon: Icons.phone_android_outlined,
+                        ),
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) {
+                            return 'Phone number is required';
+                          }
+                          final cleanV = v.trim().replaceAll(' ', '');
+                          if (!RegExp(r'^\+?[0-9]{9,15}$').hasMatch(cleanV)) {
+                            return 'Enter a valid phone number';
                           }
                           return null;
                         },
