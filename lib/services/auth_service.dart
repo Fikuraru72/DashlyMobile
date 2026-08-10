@@ -288,6 +288,13 @@ class AuthService {
     return response.data as Map<String, dynamic>;
   }
 
+  Future<Map<String, dynamic>> getProfile() async {
+    final response = await _dio.get('/users/me');
+    final data = response.data as Map<String, dynamic>;
+    await saveUser(data);
+    return data;
+  }
+
   Future<Map<String, dynamic>> completeProfile({
     String? phone,
     required Map<String, dynamic> healthInfo,
@@ -302,7 +309,19 @@ class AuthService {
       data: data,
     );
 
-    return response.data as Map<String, dynamic>;
+    final resData = response.data as Map<String, dynamic>;
+
+    // Also update saved local user
+    final currentUser = await getSavedUser();
+    if (currentUser != null) {
+      final updatedUser = Map<String, dynamic>.from(currentUser);
+      updatedUser.addAll(resData);
+      await saveUser(updatedUser);
+    } else {
+      await saveUser(resData);
+    }
+
+    return resData;
   }
   Future<Map<String, dynamic>> updateProfile({
     String? name,

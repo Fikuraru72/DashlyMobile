@@ -4,7 +4,6 @@ import '../../providers/auth_provider.dart';
 import '../../theme/dashly_theme.dart';
 import 'login_screen.dart';
 import '../main_navigation.dart';
-import 'profile_setup_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -30,18 +29,10 @@ class _SplashScreenState extends State<SplashScreen> {
       final success = await auth.tryAutoLogin();
       if (success) {
         if (mounted) {
-          final user = auth.currentUser;
-          if (user?.healthInfo == null || user?.healthInfo?.bloodType == null || user?.healthInfo?.bloodType?.isEmpty == true) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => const ProfileSetupScreen()),
-            );
-          } else {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => const MainNavigation()),
-            );
-          }
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const MainNavigation()),
+          );
           return;
         }
       }

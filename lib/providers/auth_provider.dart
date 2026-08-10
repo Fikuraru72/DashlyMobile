@@ -187,17 +187,22 @@ class AuthProvider extends ChangeNotifier {
     _setLoading(false);
   }
 
-  /// Tries to restore session from saved token/user.
   Future<bool> tryAutoLogin() async {
     final token = await _authService.getToken();
     if (token == null) return false;
 
-    final savedUser = await _authService.getSavedUser();
-    if (savedUser == null) return false;
-
-    _currentUser = User.fromJson(savedUser);
-    notifyListeners();
-    return true;
+    try {
+      final freshUserData = await _authService.getProfile();
+      _currentUser = User.fromJson(freshUserData);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      final savedUser = await _authService.getSavedUser();
+      if (savedUser == null) return false;
+      _currentUser = User.fromJson(savedUser);
+      notifyListeners();
+      return true;
+    }
   }
 
   /// Extracts a clean error message from exceptions.
