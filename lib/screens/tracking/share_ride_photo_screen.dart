@@ -12,12 +12,13 @@ import '../../providers/event_provider.dart';
 import '../../theme/dashly_theme.dart';
 
 /// ════════════════════════════════════════════════════════════════
-/// ShareRidePhotoScreen — Custom Strava-Style Layout 📸
+/// ShareRidePhotoScreen — Ultra-Clean Minimalist Cycling Photo Share 📸
 /// ════════════════════════════════════════════════════════════════
-/// Custom Layout:
+/// Features:
 /// 1. Top Header: Event Name + Dashly Cycling & BIB Badge
-/// 2. Bottom-Left: Compact Cycling Metrics (Dist, Time, Avg, Elev)
-/// 3. Bottom-Right: Floating Orange GPS Route Vector Line
+/// 2. Bottom-Left 2x2 Grid Stats (Distance, Time HH:MM, Avg, Elev)
+///    - Floating pure white text (No black background box)
+/// 3. Bottom-Right: Neon Green Floating GPS Vector Route Line 💚
 /// ════════════════════════════════════════════════════════════════
 class ShareRidePhotoScreen extends StatefulWidget {
   final int eventId;
@@ -116,11 +117,11 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
     }
   }
 
-  String _formatDuration(Duration duration) {
+  String _formatDurationHHMM(Duration duration) {
     String twoDigits(int n) => n.toString().padLeft(2, "0");
-    String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
-    String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
-    return "${twoDigits(duration.inHours)}:$twoDigitMinutes:$twoDigitSeconds";
+    String hours = twoDigits(duration.inHours);
+    String minutes = twoDigits(duration.inMinutes.remainder(60));
+    return "$hours:$minutes";
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -311,7 +312,7 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 child: Column(
                   children: [
-                    // RepaintBoundary Custom Layout Photo Card
+                    // RepaintBoundary Clean Photo Card
                     RepaintBoundary(
                       key: _globalKey,
                       child: Container(
@@ -331,7 +332,7 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
                           child: Stack(
                             fit: StackFit.expand,
                             children: [
-                              // 1. Background Photo or Dark Gradient Canvas
+                              // 1. Background Photo or Dark Canvas
                               if (_selectedImage != null)
                                 Image.file(
                                   _selectedImage!,
@@ -359,27 +360,27 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
                                   ),
                                 ),
 
-                              // Subtle Vignette Overlay for High Readability
+                              // Subtle Gradient Overlay for Clean Pure White Text Contrast
                               Container(
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
                                     colors: [
-                                      Colors.black.withValues(alpha: 0.6),
+                                      Colors.black.withValues(alpha: 0.55),
                                       Colors.transparent,
-                                      Colors.black.withValues(alpha: 0.8),
+                                      Colors.black.withValues(alpha: 0.75),
                                     ],
                                     begin: Alignment.topCenter,
                                     end: Alignment.bottomCenter,
-                                    stops: const [0.0, 0.4, 1.0],
+                                    stops: const [0.0, 0.45, 1.0],
                                   ),
                                 ),
                               ),
 
-                              // 2. [TULISAN NAMA EVENT DI ATAS] Header Section
+                              // 2. [TULISAN NAMA EVENT DI ATAS] Clean White Header Section
                               Positioned(
-                                top: 18,
-                                left: 18,
-                                right: 18,
+                                top: 20,
+                                left: 20,
+                                right: 20,
                                 child: Row(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -388,7 +389,7 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          // Event Name Title
+                                          // Event Name Title in Pure White
                                           Text(
                                             widget.eventName.toUpperCase(),
                                             style: const TextStyle(
@@ -397,7 +398,7 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
                                               fontSize: 16,
                                               letterSpacing: 1.2,
                                               shadows: [
-                                                Shadow(color: Colors.black87, blurRadius: 8, offset: Offset(0, 1)),
+                                                Shadow(color: Colors.black, blurRadius: 8, offset: Offset(0, 1)),
                                               ],
                                             ),
                                             maxLines: 2,
@@ -405,103 +406,92 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
                                           ),
                                           const SizedBox(height: 4),
 
-                                          // Dashly Cycling Badge Pill
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                            decoration: BoxDecoration(
-                                              color: Colors.black.withValues(alpha: 0.6),
-                                              borderRadius: BorderRadius.circular(12),
-                                              border: Border.all(color: context.dashlyColors.accent.withValues(alpha: 0.6)),
-                                            ),
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Icon(Icons.bolt_rounded, size: 12, color: context.dashlyColors.accent),
-                                                const SizedBox(width: 3),
-                                                Text(
-                                                  "DASHLY CYCLING",
-                                                  style: TextStyle(
-                                                    color: context.dashlyColors.accent,
-                                                    fontWeight: FontWeight.w900,
-                                                    fontSize: 8.5,
-                                                    letterSpacing: 0.8,
-                                                  ),
+                                          // Dashly Cycling Title in Pure White Text
+                                          Row(
+                                            children: [
+                                              const Icon(Icons.bolt_rounded, size: 12, color: Colors.white),
+                                              const SizedBox(width: 3),
+                                              Text(
+                                                "DASHLY CYCLING",
+                                                style: TextStyle(
+                                                  color: Colors.white.withValues(alpha: 0.9),
+                                                  fontWeight: FontWeight.w900,
+                                                  fontSize: 9,
+                                                  letterSpacing: 1.0,
+                                                  shadows: const [
+                                                    Shadow(color: Colors.black, blurRadius: 6),
+                                                  ],
                                                 ),
-                                              ],
-                                            ),
+                                              ),
+                                            ],
                                           ),
                                         ],
                                       ),
                                     ),
 
-                                    // BIB Badge
+                                    // BIB Badge in Pure White Text
                                     if (bibText.isNotEmpty)
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                        decoration: BoxDecoration(
-                                          color: Colors.black.withValues(alpha: 0.65),
-                                          borderRadius: BorderRadius.circular(14),
-                                          border: Border.all(color: Colors.white24),
-                                        ),
-                                        child: Text(
-                                          bibText,
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 9.5,
-                                            letterSpacing: 1.0,
-                                          ),
+                                      Text(
+                                        bibText,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 11,
+                                          letterSpacing: 1.0,
+                                          shadows: [
+                                            Shadow(color: Colors.black, blurRadius: 6),
+                                          ],
                                         ),
                                       ),
                                   ],
                                 ),
                               ),
 
-                              // 3. [STATS DI TARUH BAWAH KIRI] Compact Vertical Stack Card
+                              // 3. [STATS 2X2 GRID DI BAWAH KIRI] Clean Pure White Text, Tanpa Background Hitam
                               Positioned(
-                                bottom: 18,
-                                left: 18,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.withValues(alpha: 0.65),
-                                    borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(color: Colors.white12),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withValues(alpha: 0.3),
-                                        blurRadius: 10,
-                                      ),
-                                    ],
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      _buildSideStatItem(context, "DISTANCE", "${widget.totalDistanceKm.toStringAsFixed(2)} km"),
-                                      const SizedBox(height: 8),
-                                      _buildSideStatItem(context, "TIME", _formatDuration(widget.elapsedDuration)),
-                                      const SizedBox(height: 8),
-                                      _buildSideStatItem(context, "AVG SPEED", "${widget.avgSpeedKmh.toStringAsFixed(1)} km/h"),
-                                      const SizedBox(height: 8),
-                                      _buildSideStatItem(context, "ELEV GAIN", "${widget.elevationGainM.toStringAsFixed(0)} m"),
-                                    ],
-                                  ),
+                                bottom: 20,
+                                left: 20,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    // Row 1: Distance & Time (HH:MM)
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        _buildCleanWhiteStat("DISTANCE", "${widget.totalDistanceKm.toStringAsFixed(2)} km"),
+                                        const SizedBox(width: 24),
+                                        _buildCleanWhiteStat("TIME", _formatDurationHHMM(widget.elapsedDuration)),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 14),
+                                    // Row 2: Avg Speed & Elev Gain
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        _buildCleanWhiteStat("AVG SPEED", "${widget.avgSpeedKmh.toStringAsFixed(1)} km/h"),
+                                        const SizedBox(width: 24),
+                                        _buildCleanWhiteStat("ELEV GAIN", "${widget.elevationGainM.toStringAsFixed(0)} m"),
+                                      ],
+                                    ),
+                                  ],
                                 ),
                               ),
 
-                              // 4. [GAMBAR RUTE DI SEBELAH KANAN BAWAH] Floating Strava Orange GPS Vector Route Line
+                              // 4. [GAMBAR RUTE DI SEBELAH KANAN BAWAH] Neon Green Floating GPS Route Line 💚
                               if (_routePoints.isNotEmpty)
                                 Positioned(
-                                  bottom: 18,
-                                  right: 18,
+                                  bottom: 20,
+                                  right: 20,
                                   child: SizedBox(
-                                    width: 140,
-                                    height: 110,
+                                    width: 135,
+                                    height: 105,
                                     child: CustomPaint(
-                                      painter: StravaRoutePainter(
+                                      painter: NeonGreenRoutePainter(
                                         points: _routePoints,
-                                        routeColor: const Color(0xFFFC5200), // Iconic Strava Orange
+                                        routeColor: const Color(0xFF00FF66), // Neon Vibrant Green 💚
                                       ),
                                     ),
                                   ),
@@ -619,7 +609,7 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
     );
   }
 
-  Widget _buildSideStatItem(BuildContext context, String label, String value) {
+  Widget _buildCleanWhiteStat(String label, String value) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -627,21 +617,24 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
         Text(
           label,
           style: TextStyle(
-            color: context.dashlyColors.accent,
-            fontSize: 8.5,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 0.8,
+            color: Colors.white.withValues(alpha: 0.75),
+            fontSize: 9,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.0,
+            shadows: const [
+              Shadow(color: Colors.black87, blurRadius: 6, offset: Offset(0, 1)),
+            ],
           ),
         ),
-        const SizedBox(height: 1),
+        const SizedBox(height: 2),
         Text(
           value,
           style: const TextStyle(
             color: Colors.white,
-            fontSize: 13,
+            fontSize: 15,
             fontWeight: FontWeight.w900,
             shadows: [
-              Shadow(color: Colors.black87, blurRadius: 4),
+              Shadow(color: Colors.black, blurRadius: 8, offset: Offset(0, 1.5)),
             ],
           ),
         ),
@@ -651,13 +644,13 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
 }
 
 /// ════════════════════════════════════════════════════════════════
-/// StravaRoutePainter — Floating Orange GPS Vector Route Line 🧡
+/// NeonGreenRoutePainter — Floating Neon Green GPS Vector Line 💚
 /// ════════════════════════════════════════════════════════════════
-class StravaRoutePainter extends CustomPainter {
+class NeonGreenRoutePainter extends CustomPainter {
   final List<DashlyLatLng> points;
   final Color routeColor;
 
-  StravaRoutePainter({required this.points, required this.routeColor});
+  NeonGreenRoutePainter({required this.points, required this.routeColor});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -698,18 +691,18 @@ class StravaRoutePainter extends CustomPainter {
       }
     }
 
-    // Outer Shadow Line for High Readability on Photos
+    // Outer Shadow Line for High Contrast on any photo
     final shadowPaint = Paint()
-      ..color = Colors.black54
-      ..strokeWidth = 5.0
+      ..color = Colors.black87
+      ..strokeWidth = 5.5
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
 
-    // Iconic Strava Orange Line
+    // Neon Green Route Line
     final linePaint = Paint()
       ..color = routeColor
-      ..strokeWidth = 3.5
+      ..strokeWidth = 3.6
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
