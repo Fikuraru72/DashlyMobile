@@ -33,15 +33,19 @@ class EventListProvider extends ChangeNotifier {
       notifyListeners();
     }
     
-    final events = await _eventService.getExploreEvents();
-    if (events != null) {
-      _sortEventsDescending(events);
-      _exploreEvents = events;
-      _mergeParticipantData();
+    try {
+      final events = await _eventService.getExploreEvents();
+      if (events != null) {
+        _sortEventsDescending(events);
+        _exploreEvents = events;
+        _mergeParticipantData();
+      }
+    } catch (e) {
+      print("Error loading explore events: $e");
+    } finally {
+      _isLoadingExplore = false;
+      notifyListeners();
     }
-    
-    _isLoadingExplore = false;
-    notifyListeners();
   }
 
   Future<void> loadMoreExploreEvents() async {
@@ -49,27 +53,31 @@ class EventListProvider extends ChangeNotifier {
     _isLoadingMore = true;
     notifyListeners();
 
-    _page++;
-    final moreEvents = await _eventService.getExploreEvents();
-    if (moreEvents != null && moreEvents.isNotEmpty) {
-      _sortEventsDescending(moreEvents);
-      int newItemsAdded = 0;
-      for (final event in moreEvents) {
-        if (!_exploreEvents.any((e) => e.id == event.id)) {
-          _exploreEvents.add(event);
-          newItemsAdded++;
+    try {
+      _page++;
+      final moreEvents = await _eventService.getExploreEvents();
+      if (moreEvents != null && moreEvents.isNotEmpty) {
+        _sortEventsDescending(moreEvents);
+        int newItemsAdded = 0;
+        for (final event in moreEvents) {
+          if (!_exploreEvents.any((e) => e.id == event.id)) {
+            _exploreEvents.add(event);
+            newItemsAdded++;
+          }
         }
-      }
-      if (newItemsAdded == 0) {
+        if (newItemsAdded == 0) {
+          _hasMore = false;
+        }
+        _mergeParticipantData();
+      } else {
         _hasMore = false;
       }
-      _mergeParticipantData();
-    } else {
-      _hasMore = false;
+    } catch (e) {
+      print("Error loading more explore events: $e");
+    } finally {
+      _isLoadingMore = false;
+      notifyListeners();
     }
-
-    _isLoadingMore = false;
-    notifyListeners();
   }
 
   /// Also loads my events to have participant data (bibNumber, participantState)

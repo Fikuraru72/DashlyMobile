@@ -102,32 +102,32 @@ class Event {
   }
 
   factory Event.fromJson(Map<String, dynamic> json) => Event(
-        id: json['id'] as int,
-        name: json['name'] as String,
-        description: json['description'] as String? ?? '',
-        category: _parseCategory(json['category'] as String?),
-        status: _parseStatus(json['status'] as String),
-        token: json['token'] as String,
-        currentCount: json['currentCount'] as int,
-        maxParticipants: json['maxParticipants'] as int,
-        dateEvent: DateTime.parse(json['dateEvent'] as String),
-        routeGeojson: json['routeGeojson'] as Map<String, dynamic>?,
-        startTime: json['startTime'] != null ? DateTime.parse(json['startTime'] as String) : null,
-        endTime: json['endTime'] != null ? DateTime.parse(json['endTime'] as String) : null,
-        monitoringStartOffset: json['monitoringStartOffset'] as int? ?? 60,
-        monitoringEndOffset: json['monitoringEndOffset'] as int? ?? 240,
-        monitoringWindow: json['monitoringWindow'] as Map<String, dynamic>?,
-        bibNumber: json['bibNumber'] as String?,
+        id: json['id'] is num ? (json['id'] as num).toInt() : (int.tryParse(json['id']?.toString() ?? '0') ?? 0),
+        name: json['name']?.toString() ?? 'Event',
+        description: json['description']?.toString() ?? '',
+        category: _parseCategory(json['category']?.toString()),
+        status: _parseStatus(json['status']?.toString()),
+        token: json['token']?.toString() ?? '',
+        currentCount: json['currentCount'] is num ? (json['currentCount'] as num).toInt() : (int.tryParse(json['currentCount']?.toString() ?? '0') ?? 0),
+        maxParticipants: json['maxParticipants'] is num ? (json['maxParticipants'] as num).toInt() : (int.tryParse(json['maxParticipants']?.toString() ?? '0') ?? 0),
+        dateEvent: json['dateEvent'] != null ? (DateTime.tryParse(json['dateEvent'].toString()) ?? DateTime.now()) : DateTime.now(),
+        routeGeojson: json['routeGeojson'] is Map<String, dynamic> ? json['routeGeojson'] as Map<String, dynamic> : null,
+        startTime: json['startTime'] != null ? DateTime.tryParse(json['startTime'].toString()) : null,
+        endTime: json['endTime'] != null ? DateTime.tryParse(json['endTime'].toString()) : null,
+        monitoringStartOffset: json['monitoringStartOffset'] is num ? (json['monitoringStartOffset'] as num).toInt() : 60,
+        monitoringEndOffset: json['monitoringEndOffset'] is num ? (json['monitoringEndOffset'] as num).toInt() : 240,
+        monitoringWindow: json['monitoringWindow'] is Map<String, dynamic> ? json['monitoringWindow'] as Map<String, dynamic> : null,
+        bibNumber: json['bibNumber']?.toString(),
         bannerBase64: json['bannerBase64'] as String? ?? json['bannerImage'] as String? ?? json['banner_image'] as String? ?? json['banner'] as String? ?? json['bannerUrl'] as String? ?? json['image'] as String?,
         latitude: json['latitude'] != null ? double.tryParse(json['latitude'].toString()) : null,
         longitude: json['longitude'] != null ? double.tryParse(json['longitude'].toString()) : null,
-        participantState: _parseParticipantState(json['participantState'] as String?),
+        participantState: _parseParticipantState(json['participantState']?.toString()),
         totalDistanceMeters: json['totalDistanceMeters'] != null ? (json['totalDistanceMeters'] as num).toInt() : null,
         totalElevationMeters: json['totalElevationMeters'] != null ? (json['totalElevationMeters'] as num).toInt() : null,
-        altitudeProfile: json['altitudeProfile'] as List<dynamic>?,
+        altitudeProfile: json['altitudeProfile'] is List ? json['altitudeProfile'] as List<dynamic> : null,
       );
 
-  static EventStatus _parseStatus(String status) {
+  static EventStatus _parseStatus(String? status) {
     if (status == 'START' || status == 'LIVE') return EventStatus.start;
     if (status == 'FINISHED') return EventStatus.finished;
     return EventStatus.idle;
