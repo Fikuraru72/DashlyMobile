@@ -312,20 +312,20 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         ? Duration(seconds: event.durationSeconds!)
                         : (summary != null
                             ? Duration(seconds: summary['elapsedDurationSeconds'] as int)
-                            : const Duration(minutes: 45));
+                            : Duration.zero);
 
                     final double dist = summary != null
                         ? (summary['totalDistanceKm'] as num).toDouble()
-                        : (event.totalDistanceMeters ?? 10000) / 1000.0;
+                        : ((event.totalDistanceMeters ?? 0) / 1000.0);
 
                     final double avgSpd = event.avgSpeedKmh ??
-                        (summary != null ? (summary['avgSpeedKmh'] as num).toDouble() : 28.5);
+                        (summary != null ? (summary['avgSpeedKmh'] as num).toDouble() : 0.0);
 
                     final double maxSpd = event.maxSpeedKmh ??
-                        (summary != null ? (summary['maxSpeedKmh'] as num).toDouble() : 42.0);
+                        (summary != null ? (summary['maxSpeedKmh'] as num).toDouble() : 0.0);
 
                     final double elev = event.elevationGainMeters?.toDouble() ??
-                        (summary != null ? (summary['elevationGainM'] as num).toDouble() : (event.totalElevationMeters ?? 250).toDouble());
+                        (summary != null ? (summary['elevationGainM'] as num).toDouble() : ((event.totalElevationMeters ?? 0).toDouble()));
 
                     final int rank = summary != null ? (summary['finalRank'] as int? ?? 0) : 0;
                     final int totalRunners = summary != null ? (summary['totalParticipants'] as int? ?? 0) : 0;
