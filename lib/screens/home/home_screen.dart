@@ -9,6 +9,7 @@ import '../../theme/dashly_theme.dart';
 import '../tracking/tracking_mode_dialog.dart';
 
 import '../../components/gps_status_banner.dart';
+import '../onboarding/permission_onboarding_dialog.dart';
 import '../tracking/race_summary_screen.dart';
 import '../../services/offline_storage_service.dart';
 

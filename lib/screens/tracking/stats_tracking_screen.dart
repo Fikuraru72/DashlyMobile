@@ -6,6 +6,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/tracking_provider.dart';
 import '../../providers/event_provider.dart';
 import '../../theme/dashly_theme.dart';
+import '../../widgets/altitude_chart_widget.dart';
 import 'race_summary_screen.dart';
 import '../../services/offline_storage_service.dart';
 
