@@ -239,7 +239,7 @@ class _StatsTrackingScreenState extends State<StatsTrackingScreen> {
     final routeTotalKm = (currentEvent.totalDistanceMeters ?? 0) / 1000.0;
     final progressPct = routeTotalKm > 0 ? (tracker.totalDistance / routeTotalKm) * 100.0 : 0.0;
 
-    if (distToFinish < 20.0 && progressPct >= 80.0) {
+    if (distToFinish < 20.0 && progressPct >= 90.0) {
       _hasAutoFinished = true;
       _triggerAutoFinish(tracker);
     }

@@ -241,8 +241,8 @@ class _TrackingScreenState extends State<TrackingScreen> {
     final routeTotalKm = (currentEvent.totalDistanceMeters ?? 0) / 1000.0;
     final progressPct = routeTotalKm > 0 ? (tracker.totalDistance / routeTotalKm) * 100.0 : 0.0;
 
-    // Auto-finish conditions: within 20m of finish AND covered ≥ 80% of route
-    if (distToFinish < 20.0 && progressPct >= 80.0) {
+    // Auto-finish conditions: within 20m of finish AND covered ≥ 90% of route
+    if (distToFinish < 20.0 && progressPct >= 90.0) {
       _hasAutoFinished = true;
       _triggerAutoFinish(tracker);
     }
