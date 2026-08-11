@@ -579,32 +579,33 @@ class EventDetailScreen extends StatelessWidget {
   }
 
   Widget _buildBannerImage(BuildContext context, String? imageString) {
-    if (imageString == null || imageString.isEmpty) {
-      return Icon(Icons.map_rounded, color: context.dashlyColors.textHint.withOpacity(0.2), size: 120);
+    if (imageString == null || imageString.trim().isEmpty) {
+      return Icon(Icons.map_rounded, color: context.dashlyColors.textHint.withValues(alpha: 0.2), size: 120);
     }
 
-    if (imageString.startsWith('http://') || imageString.startsWith('https://')) {
+    final trimmed = imageString.trim();
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
       return Image.network(
-        imageString,
+        trimmed,
         fit: BoxFit.cover,
         width: double.infinity,
         height: double.infinity,
-        errorBuilder: (_, __, ___) => Icon(Icons.broken_image_rounded, color: context.dashlyColors.error.withOpacity(0.5), size: 120),
+        errorBuilder: (_, __, ___) => Icon(Icons.broken_image_rounded, color: context.dashlyColors.error.withValues(alpha: 0.5), size: 120),
       );
     }
 
     try {
-      final cleanBase64 = imageString.split(',').last.replaceAll(RegExp(r'\s+'), '');
+      final cleanBase64 = trimmed.split(',').last.replaceAll(RegExp(r'\s+'), '');
       final bytes = const Base64Decoder().convert(cleanBase64);
       return Image.memory(
         bytes,
         fit: BoxFit.cover,
         width: double.infinity,
         height: double.infinity,
-        errorBuilder: (_, __, ___) => Icon(Icons.broken_image_rounded, color: context.dashlyColors.error.withOpacity(0.5), size: 120),
+        errorBuilder: (_, __, ___) => Icon(Icons.broken_image_rounded, color: context.dashlyColors.error.withValues(alpha: 0.5), size: 120),
       );
     } catch (e) {
-      return Icon(Icons.broken_image_rounded, color: context.dashlyColors.error.withOpacity(0.5), size: 120);
+      return Icon(Icons.broken_image_rounded, color: context.dashlyColors.error.withValues(alpha: 0.5), size: 120);
     }
   }
 }
