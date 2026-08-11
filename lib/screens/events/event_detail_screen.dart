@@ -578,16 +578,34 @@ class EventDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBannerImage(BuildContext context, String? base64String) {
-    if (base64String == null || base64String.isEmpty) {
-      return Icon(Icons.map_rounded, color: context.dashlyColors.textHint.withOpacity(0.2), size: 120);
+  Widget _buildBannerImage(BuildContext context, String? imageString) {
+    if (imageString == null || imageString.trim().isEmpty) {
+      return Icon(Icons.map_rounded, color: context.dashlyColors.textHint.withValues(alpha: 0.2), size: 120);
     }
+
+    final trimmed = imageString.trim();
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      return Image.network(
+        trimmed,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        errorBuilder: (_, __, ___) => Icon(Icons.broken_image_rounded, color: context.dashlyColors.error.withValues(alpha: 0.5), size: 120),
+      );
+    }
+
     try {
-      final cleanBase64 = base64String.split(',').last.replaceAll(RegExp(r'\s+'), '');
+      final cleanBase64 = trimmed.split(',').last.replaceAll(RegExp(r'\s+'), '');
       final bytes = const Base64Decoder().convert(cleanBase64);
-      return Image.memory(bytes, fit: BoxFit.cover, width: double.infinity, height: double.infinity);
+      return Image.memory(
+        bytes,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        errorBuilder: (_, __, ___) => Icon(Icons.broken_image_rounded, color: context.dashlyColors.error.withValues(alpha: 0.5), size: 120),
+      );
     } catch (e) {
-      return Icon(Icons.broken_image_rounded, color: context.dashlyColors.error.withOpacity(0.5), size: 120);
+      return Icon(Icons.broken_image_rounded, color: context.dashlyColors.error.withValues(alpha: 0.5), size: 120);
     }
   }
 }
