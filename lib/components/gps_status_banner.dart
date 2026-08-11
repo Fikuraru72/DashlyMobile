@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
-import '../theme/dashly_theme.dart';
 
 /// ════════════════════════════════════════════════════════════════
 /// GpsStatusBanner — Real-Time Device GPS Alert Card ⚠️

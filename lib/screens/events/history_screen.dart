@@ -58,7 +58,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             if (_selectedFilter == null) return true;
             return e.status == _selectedFilter;
           }).toList()
-            ..sort((a, b) => b.eventDate.compareTo(a.eventDate));
+            ..sort((a, b) => b.dateEvent.compareTo(a.dateEvent));
 
           return Column(
             children: [
