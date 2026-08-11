@@ -47,17 +47,21 @@ class _HomeScreenState extends State<HomeScreen> {
     final user = auth.currentUser;
     final stats = dash.stats;
 
-    // Find active event (tracking or confirmed, or event status is START)
+    // Find active event (newest tracking, confirmed, or event status is START)
     final activeEvents = eventProvider.myEvents.where((e) => 
       e.status == EventStatus.start || 
       e.participantState == ParticipantState.tracking || 
       e.participantState == ParticipantState.confirmed
-    ).toList();
+    ).toList()
+      ..sort((a, b) => b.dateEvent.compareTo(a.dateEvent));
+
     final Event? activeEvent = activeEvents.isNotEmpty ? activeEvents.first : null;
 
-    // Recent events (up to 3 finished)
-    final recentEvents = eventProvider.myEvents
+    // Recent events (newest 3 finished)
+    final recentEvents = (eventProvider.myEvents
         .where((e) => e.participantState == ParticipantState.finished)
+        .toList()
+        ..sort((a, b) => b.dateEvent.compareTo(a.dateEvent)))
         .take(3)
         .toList();
 
