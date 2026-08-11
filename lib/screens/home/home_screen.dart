@@ -69,8 +69,6 @@ class _HomeScreenState extends State<HomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 40),
-              // Real-Time GPS Alert Banner if GPS is disabled
-              const GpsStatusBanner(),
               // Header Section
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -108,7 +106,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                           ),
                           Text(
-                            "Ready for a run today?",
+                            "Ready For a Race Today?",
                             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                   color: context.dashlyColors.textSecondary,
                                 ),
