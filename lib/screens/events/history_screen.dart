@@ -15,7 +15,7 @@ class HistoryScreen extends StatefulWidget {
 }
 
 class _HistoryScreenState extends State<HistoryScreen> {
-  EventStatus? _selectedFilter; // null means 'All'
+  EventStatus _selectedFilter = EventStatus.start; // Default to Live
 
   @override
   void initState() {
@@ -54,7 +54,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
           }
 
           final events = provider.myEvents.where((e) {
-            if (_selectedFilter == null) return true;
             return e.status == _selectedFilter;
           }).toList()
             ..sort((a, b) => b.dateEvent.compareTo(a.dateEvent));
@@ -99,8 +98,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       child: Row(
         children: [
-          _buildFilterChip(context, "All", null),
-          const SizedBox(width: 8),
           _buildFilterChip(context, "Live", EventStatus.start),
           const SizedBox(width: 8),
           _buildFilterChip(context, "Waiting", EventStatus.idle),
@@ -111,7 +108,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  Widget _buildFilterChip(BuildContext context, String label, EventStatus? status) {
+  Widget _buildFilterChip(BuildContext context, String label, EventStatus status) {
     final isSelected = _selectedFilter == status;
     return GestureDetector(
       onTap: () {
