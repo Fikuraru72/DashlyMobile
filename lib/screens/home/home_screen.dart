@@ -10,6 +10,7 @@ import '../tracking/tracking_mode_dialog.dart';
 
 import '../../components/gps_status_banner.dart';
 import '../onboarding/permission_onboarding_dialog.dart';
+import '../tracking/race_summary_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -231,46 +232,67 @@ class _HomeScreenState extends State<HomeScreen> {
                 itemCount: recentEvents.length,
                 itemBuilder: (context, index) {
                   final event = recentEvents[index];
+
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 12),
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: context.dashlyColors.surface,
-                        borderRadius: DashlyTheme.radiusMd,
-                        border: Border.all(color: context.dashlyColors.divider),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: context.dashlyColors.surfaceLight,
-                              borderRadius: DashlyTheme.radiusSm,
-                            ),
-                            child: Icon(
-                              event.category == EventCategory.running ? Icons.directions_run_rounded : Icons.directions_bike_rounded,
-                              color: context.dashlyColors.accent
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => RaceSummaryScreen(
+                              eventId: event.id,
+                              eventName: event.name,
+                              elapsedDuration: const Duration(minutes: 45),
+                              totalDistanceKm: (event.totalDistanceMeters ?? 10000) / 1000.0,
+                              avgSpeedKmh: 28.5,
+                              maxSpeedKmh: 42.0,
+                              elevationGainM: (event.totalElevationMeters ?? 250).toDouble(),
+                              routeGeojson: event.routeGeojson,
                             ),
                           ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  event.name,
-                                  style: TextStyle(fontWeight: FontWeight.bold, color: context.dashlyColors.textPrimary),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  "${event.dateEvent.day}/${event.dateEvent.month}/${event.dateEvent.year}",
-                                  style: TextStyle(color: context.dashlyColors.textHint, fontSize: 12),
-                                ),
-                              ],
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: context.dashlyColors.surface,
+                          borderRadius: DashlyTheme.radiusMd,
+                          border: Border.all(color: context.dashlyColors.divider),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: context.dashlyColors.surfaceLight,
+                                borderRadius: DashlyTheme.radiusSm,
+                              ),
+                              child: Icon(
+                                event.category == EventCategory.running ? Icons.directions_run_rounded : Icons.directions_bike_rounded,
+                                color: context.dashlyColors.accent
+                              ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    event.name,
+                                    style: TextStyle(fontWeight: FontWeight.bold, color: context.dashlyColors.textPrimary),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    "${event.dateEvent.day}/${event.dateEvent.month}/${event.dateEvent.year}",
+                                    style: TextStyle(color: context.dashlyColors.textHint, fontSize: 12),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Icon(Icons.chevron_right_rounded, color: context.dashlyColors.accent),
+                          ],
+                        ),
                       ),
                     ),
                   );
