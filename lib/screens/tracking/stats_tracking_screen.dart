@@ -725,7 +725,7 @@ class _StatsTrackingScreenState extends State<StatsTrackingScreen> {
               ],
             ),
             child: Row(
-              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
                   tracker.isSosTriggered ? Icons.warning_rounded : Icons.warning_amber_rounded,
@@ -764,107 +764,38 @@ class _StatsTrackingScreenState extends State<StatsTrackingScreen> {
   Widget _buildBottomControls(TrackingProvider tracker) {
     return Row(
       children: [
-        if (tracker.isTracking) ...[
-          _buildSosButton(tracker),
-          const SizedBox(width: 12),
-        ],
-        Expanded(
-          child: !tracker.isTracking
-              ? ElevatedButton(
-                  onPressed: () async {
-                    final userId = context.read<AuthProvider>().currentUser?.id ?? 0;
-                    try {
-                      await tracker.startTracking(widget.eventId, userId);
-                      _stopwatch.start();
-                    } catch (e) {
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text("⚠️ $e", style: const TextStyle(fontWeight: FontWeight.bold)),
-                            backgroundColor: context.dashlyColors.error,
-                          ),
-                        );
-                      }
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: context.dashlyColors.accent,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  ),
-                  child: const Text(
-                    "START RACE NOW",
-                    style: TextStyle(color: Colors.black, fontWeight: FontWeight.w900, fontSize: 15),
-                  ),
-                )
-              : ElevatedButton(
-                  onPressed: () async {
-                    if (await _showExitConfirmation()) {
-                      final elapsed = _stopwatch.elapsed;
-                      final dist = tracker.totalDistance;
-                      final avgSpd = tracker.avgSpeed;
-                      final maxSpd = tracker.maxSpeed;
-                      final elev = tracker.elevationGain;
-                      final rank = tracker.currentRank;
-                      final totalRunners = tracker.totalParticipants;
-
-                      tracker.stopTracking();
-                      _stopwatch.stop();
-
-                      // Save race summary locally into SQLite
-                      await OfflineStorageService.saveRaceSummary(
-                        eventId: widget.eventId,
-                        eventName: widget.eventName,
-                        elapsedDuration: elapsed,
-                        totalDistanceKm: dist,
-                        avgSpeedKmh: avgSpd,
-                        maxSpeedKmh: maxSpd,
-                        elevationGainM: elev,
-                        finalRank: rank,
-                        totalParticipants: totalRunners,
-                      );
-
-                      if (mounted) {
-                        context.read<EventProvider>().finishParticipant(
-                          widget.eventId,
-                          stats: {
-                            'durationSeconds': elapsed.inSeconds,
-                            'totalDistanceMeters': (dist * 1000).toInt(),
-                            'avgSpeedKmh': avgSpd,
-                            'maxSpeedKmh': maxSpd,
-                            'elevationGainMeters': elev.toInt(),
-                          },
-                        );
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => RaceSummaryScreen(
-                              eventId: widget.eventId,
-                              eventName: widget.eventName,
-                              elapsedDuration: elapsed,
-                              totalDistanceKm: dist,
-                              avgSpeedKmh: avgSpd,
-                              maxSpeedKmh: maxSpd,
-                              elevationGainM: elev,
-                              finalRank: rank,
-                              totalParticipants: totalRunners,
-                            ),
-                          ),
-                        );
-                      }
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: context.dashlyColors.error.withValues(alpha: 0.85),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  ),
-                  child: const Text(
-                    "STOP TRACKING",
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 15),
-                  ),
-                ),
-        ),
+        if (tracker.isTracking)
+          Expanded(child: _buildSosButton(tracker))
+        else
+          Expanded(
+            child: ElevatedButton(
+              onPressed: () async {
+                final userId = context.read<AuthProvider>().currentUser?.id ?? 0;
+                try {
+                  await tracker.startTracking(widget.eventId, userId);
+                  _stopwatch.start();
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text("⚠️ $e", style: const TextStyle(fontWeight: FontWeight.bold)),
+                        backgroundColor: context.dashlyColors.error,
+                      ),
+                    );
+                  }
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: context.dashlyColors.accent,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+              child: const Text(
+                "START RACE NOW",
+                style: TextStyle(color: Colors.black, fontWeight: FontWeight.w900, fontSize: 15),
+              ),
+            ),
+          ),
       ],
     );
   }
