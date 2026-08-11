@@ -33,11 +33,11 @@ class GpsStatusBanner extends StatefulWidget {
                 SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    "GPS NONAKTIF",
+                    "GPS LOCATION DISABLED",
                     style: TextStyle(
                       color: Colors.amber,
                       fontWeight: FontWeight.w900,
-                      fontSize: 16,
+                      fontSize: 15,
                       letterSpacing: 1.0,
                     ),
                   ),
@@ -45,44 +45,38 @@ class GpsStatusBanner extends StatefulWidget {
               ],
             ),
             content: Text(
-              "Layanan lokasi GPS pada HP Anda saat ini nonaktif. Silakan aktifkan GPS untuk dapat melacak rute gowes dan berpartisipasi dalam event balap sepeda secara real-time.",
+              "Device location services are currently turned off. Please enable GPS to allow real-time cycling route tracking and join live events.",
               style: TextStyle(
                 color: context.dashlyColors.textSecondary,
                 fontSize: 13,
                 height: 1.4,
               ),
             ),
-            actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            actionsPadding: const EdgeInsets.all(16),
             actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                child: Text(
-                  "NANTI",
-                  style: TextStyle(
-                    color: context.dashlyColors.textHint,
-                    fontWeight: FontWeight.bold,
+              SizedBox(
+                width: double.infinity,
+                height: 46,
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    Navigator.pop(dialogContext);
+                    await Geolocator.openLocationSettings();
+                  },
+                  icon: const Icon(Icons.settings_suggest_rounded, color: Colors.black, size: 18),
+                  label: const Text(
+                    "ENABLE GPS",
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 13,
+                      letterSpacing: 1.0,
+                    ),
                   ),
-                ),
-              ),
-              ElevatedButton.icon(
-                onPressed: () async {
-                  Navigator.pop(dialogContext);
-                  await Geolocator.openLocationSettings();
-                },
-                icon: const Icon(Icons.settings_suggest_rounded, color: Colors.black, size: 18),
-                label: const Text(
-                  "AKTIFKAN GPS",
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 12,
-                    letterSpacing: 0.8,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.amber,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    elevation: 2,
                   ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.amber,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 ),
               ),
             ],
