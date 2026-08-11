@@ -6,8 +6,8 @@ import '../../providers/auth_provider.dart';
 import '../../providers/tracking_provider.dart';
 import '../../providers/event_provider.dart';
 import '../../theme/dashly_theme.dart';
-import '../../widgets/altitude_chart_widget.dart';
 import 'race_summary_screen.dart';
+import '../../services/offline_storage_service.dart';
 
 /// ════════════════════════════════════════════════════════════════
 /// StatsTrackingScreen — Standalone Battery Saver Mode (No Map)
@@ -709,6 +709,20 @@ class _StatsTrackingScreenState extends State<StatsTrackingScreen> {
 
                       tracker.stopTracking();
                       _stopwatch.stop();
+
+                      // Save race summary locally into SQLite
+                      await OfflineStorageService.saveRaceSummary(
+                        eventId: widget.eventId,
+                        eventName: widget.eventName,
+                        elapsedDuration: elapsed,
+                        totalDistanceKm: dist,
+                        avgSpeedKmh: avgSpd,
+                        maxSpeedKmh: maxSpd,
+                        elevationGainM: elev,
+                        finalRank: rank,
+                        totalParticipants: totalRunners,
+                      );
+
                       if (mounted) {
                         context.read<EventProvider>().finishParticipant(widget.eventId);
                         Navigator.pushReplacement(

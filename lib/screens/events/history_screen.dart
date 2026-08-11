@@ -5,6 +5,7 @@ import '../../models/event_model.dart';
 import '../../theme/dashly_theme.dart';
 import '../tracking/tracking_mode_dialog.dart';
 import '../tracking/race_summary_screen.dart';
+import '../../services/offline_storage_service.dart';
 import 'event_detail_screen.dart';
 
 class HistoryScreen extends StatefulWidget {
@@ -303,18 +304,46 @@ class _HistoryScreenState extends State<HistoryScreen> {
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
-                  onPressed: () {
+                  onPressed: () async {
+                    final summary = await OfflineStorageService.getRaceSummary(event.id);
+                    if (!context.mounted) return;
+
+                    final Duration elapsed = summary != null
+                        ? Duration(seconds: summary['elapsedDurationSeconds'] as int)
+                        : const Duration(minutes: 45);
+
+                    final double dist = summary != null
+                        ? (summary['totalDistanceKm'] as num).toDouble()
+                        : (event.totalDistanceMeters ?? 10000) / 1000.0;
+
+                    final double avgSpd = summary != null
+                        ? (summary['avgSpeedKmh'] as num).toDouble()
+                        : 28.5;
+
+                    final double maxSpd = summary != null
+                        ? (summary['maxSpeedKmh'] as num).toDouble()
+                        : 42.0;
+
+                    final double elev = summary != null
+                        ? (summary['elevationGainM'] as num).toDouble()
+                        : (event.totalElevationMeters ?? 250).toDouble();
+
+                    final int rank = summary != null ? (summary['finalRank'] as int? ?? 0) : 0;
+                    final int totalRunners = summary != null ? (summary['totalParticipants'] as int? ?? 0) : 0;
+
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (_) => RaceSummaryScreen(
                           eventId: event.id,
                           eventName: event.name,
-                          elapsedDuration: const Duration(minutes: 45),
-                          totalDistanceKm: (event.totalDistanceMeters ?? 10000) / 1000.0,
-                          avgSpeedKmh: 28.5,
-                          maxSpeedKmh: 42.0,
-                          elevationGainM: (event.totalElevationMeters ?? 250).toDouble(),
+                          elapsedDuration: elapsed,
+                          totalDistanceKm: dist,
+                          avgSpeedKmh: avgSpd,
+                          maxSpeedKmh: maxSpd,
+                          elevationGainM: elev,
+                          finalRank: rank,
+                          totalParticipants: totalRunners,
                           routeGeojson: event.routeGeojson,
                         ),
                       ),

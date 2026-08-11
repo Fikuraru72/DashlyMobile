@@ -20,20 +20,19 @@ class OfflineStorageService {
 
     return await openDatabase(
       path,
-      version: 3,
+      version: 4,
       onCreate: (db, version) async {
-        await _createTable(db);
+        await _createTables(db);
       },
       onUpgrade: (db, oldVersion, newVersion) async {
-        await db.execute('DROP TABLE IF EXISTS $tableName');
-        await _createTable(db);
+        await _createTables(db);
       },
     );
   }
 
-  static Future<void> _createTable(Database db) async {
+  static Future<void> _createTables(Database db) async {
     await db.execute('''
-      CREATE TABLE $tableName (
+      CREATE TABLE IF NOT EXISTS $tableName (
         msg_id TEXT PRIMARY KEY,
         eventId INTEGER,
         userId INTEGER,
@@ -45,6 +44,21 @@ class OfflineStorageService {
         isAnomaly INTEGER,
         captured_at TEXT,
         battery INTEGER
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS race_summaries (
+        eventId INTEGER PRIMARY KEY,
+        eventName TEXT,
+        elapsedDurationSeconds INTEGER,
+        totalDistanceKm REAL,
+        avgSpeedKmh REAL,
+        maxSpeedKmh REAL,
+        elevationGainM REAL,
+        finalRank INTEGER,
+        totalParticipants INTEGER,
+        updatedAt TEXT
       )
     ''');
   }
@@ -87,6 +101,50 @@ class OfflineStorageService {
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
     print('💾 [OfflineStorage] Saved location locally. Waiting for connection...');
+  }
+
+  static Future<void> saveRaceSummary({
+    required int eventId,
+    required String eventName,
+    required Duration elapsedDuration,
+    required double totalDistanceKm,
+    required double avgSpeedKmh,
+    required double maxSpeedKmh,
+    required double elevationGainM,
+    int finalRank = 0,
+    int totalParticipants = 0,
+  }) async {
+    final db = await database;
+    await db.insert(
+      'race_summaries',
+      {
+        'eventId': eventId,
+        'eventName': eventName,
+        'elapsedDurationSeconds': elapsedDuration.inSeconds,
+        'totalDistanceKm': totalDistanceKm,
+        'avgSpeedKmh': avgSpeedKmh,
+        'maxSpeedKmh': maxSpeedKmh,
+        'elevationGainM': elevationGainM,
+        'finalRank': finalRank,
+        'totalParticipants': totalParticipants,
+        'updatedAt': DateTime.now().toIso8601String(),
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+    print('💾 [OfflineStorage] Saved race summary locally for eventId: $eventId');
+  }
+
+  static Future<Map<String, dynamic>?> getRaceSummary(int eventId) async {
+    try {
+      final db = await database;
+      final results = await db.query('race_summaries', where: 'eventId = ?', whereArgs: [eventId]);
+      if (results.isNotEmpty) {
+        return results.first;
+      }
+    } catch (e) {
+      print('OfflineStorage: Failed to fetch race summary: $e');
+    }
+    return null;
   }
 
   static Future<List<Map<String, dynamic>>> getOfflineLocations() async {
