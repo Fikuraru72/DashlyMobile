@@ -8,6 +8,9 @@ import '../../models/event_model.dart';
 import '../../theme/dashly_theme.dart';
 import '../tracking/tracking_mode_dialog.dart';
 
+import '../../components/gps_status_banner.dart';
+import '../onboarding/permission_onboarding_dialog.dart';
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -22,6 +25,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      PermissionOnboardingDialog.checkAndShow(context);
       context.read<EventProvider>().loadMyEvents();
       context.read<DashboardProvider>().fetchDashboardData();
     });
@@ -63,6 +67,8 @@ class _HomeScreenState extends State<HomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 40),
+              // Real-Time GPS Alert Banner if GPS is disabled
+              const GpsStatusBanner(),
               // Header Section
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../components/gps_status_banner.dart';
 import '../../providers/event_provider.dart';
 import '../../models/event_model.dart';
 import '../../theme/dashly_theme.dart';
@@ -56,10 +57,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
           final events = provider.myEvents.where((e) {
             if (_selectedFilter == null) return true;
             return e.status == _selectedFilter;
-          }).toList();
+          }).toList()
+            ..sort((a, b) => b.eventDate.compareTo(a.eventDate));
 
           return Column(
             children: [
+              const GpsStatusBanner(),
               _buildFilterChips(context),
               Expanded(
                 child: events.isEmpty 
