@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/tracking_provider.dart';
@@ -9,6 +10,8 @@ import '../../theme/dashly_theme.dart';
 import '../../widgets/altitude_chart_widget.dart';
 import 'race_summary_screen.dart';
 import '../../services/offline_storage_service.dart';
+import '../../core/utils/geo_utils.dart';
+import '../../models/event_model.dart';
 
 /// ════════════════════════════════════════════════════════════════
 /// StatsTrackingScreen — Standalone Battery Saver Mode (No Map)
@@ -39,6 +42,7 @@ class _StatsTrackingScreenState extends State<StatsTrackingScreen> {
   bool _isSosLongPressing = false;
   double _sosProgress = 0.0;
   Timer? _sosTimer;
+  bool _hasAutoFinished = false;
 
   @override
   void initState() {
@@ -207,11 +211,107 @@ class _StatsTrackingScreenState extends State<StatsTrackingScreen> {
     return r * c;
   }
 
+  /// Extracts the finish point (last coordinate) from routeGeojson.
+  DashlyLatLng? _extractFinishPoint(Map<String, dynamic>? routeGeojson) {
+    if (routeGeojson == null) return null;
+    try {
+      final features = routeGeojson['features'] as List?;
+      if (features == null || features.isEmpty) return null;
+      final geometry = features[0]['geometry'];
+      final coords = geometry?['coordinates'] as List?;
+      if (coords == null || coords.isEmpty) return null;
+      final lastPt = coords.last as List;
+      return DashlyLatLng((lastPt[1] as num).toDouble(), (lastPt[0] as num).toDouble());
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Checks if participant has crossed the finish line and auto-stops tracking.
+  void _checkAutoFinish(TrackingProvider tracker, Event? currentEvent) {
+    if (_hasAutoFinished || !tracker.isTracking || tracker.currentPosition == null) return;
+    if (currentEvent == null) return;
+
+    final finishPoint = _extractFinishPoint(currentEvent.routeGeojson);
+    if (finishPoint == null) return;
+
+    final distToFinish = tracker.currentPosition!.distanceTo(finishPoint);
+    final routeTotalKm = (currentEvent.totalDistanceMeters ?? 0) / 1000.0;
+    final progressPct = routeTotalKm > 0 ? (tracker.totalDistance / routeTotalKm) * 100.0 : 0.0;
+
+    if (distToFinish < 20.0 && progressPct >= 80.0) {
+      _hasAutoFinished = true;
+      _triggerAutoFinish(tracker);
+    }
+  }
+
+  /// Triggers the auto-finish sequence: haptic, stop tracking, save stats, navigate.
+  Future<void> _triggerAutoFinish(TrackingProvider tracker) async {
+    HapticFeedback.heavyImpact();
+
+    final elapsed = _stopwatch.elapsed;
+    final dist = tracker.totalDistance;
+    final avgSpd = tracker.avgSpeed;
+    final maxSpd = tracker.maxSpeed;
+    final elev = tracker.elevationGain;
+    final rank = tracker.currentRank;
+    final totalRunners = tracker.totalParticipants;
+
+    tracker.stopTracking();
+    _stopwatch.stop();
+
+    await OfflineStorageService.saveRaceSummary(
+      eventId: widget.eventId,
+      eventName: widget.eventName,
+      elapsedDuration: elapsed,
+      totalDistanceKm: dist,
+      avgSpeedKmh: avgSpd,
+      maxSpeedKmh: maxSpd,
+      elevationGainM: elev,
+      finalRank: rank,
+      totalParticipants: totalRunners,
+    );
+
+    if (mounted) {
+      context.read<EventProvider>().finishParticipant(
+        widget.eventId,
+        stats: {
+          'durationSeconds': elapsed.inSeconds,
+          'totalDistanceMeters': (dist * 1000).toInt(),
+          'avgSpeedKmh': avgSpd,
+          'maxSpeedKmh': maxSpd,
+          'elevationGainMeters': elev.toInt(),
+        },
+      );
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => RaceSummaryScreen(
+            eventId: widget.eventId,
+            eventName: widget.eventName,
+            elapsedDuration: elapsed,
+            totalDistanceKm: dist,
+            avgSpeedKmh: avgSpd,
+            maxSpeedKmh: maxSpd,
+            elevationGainM: elev,
+            finalRank: rank,
+            totalParticipants: totalRunners,
+          ),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final tracker = context.watch<TrackingProvider>();
     final eventProvider = context.watch<EventProvider>();
     final currentEvent = eventProvider.currentEvent;
+
+    // Check for auto-finish on every rebuild (triggered by tracker position updates)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _checkAutoFinish(tracker, currentEvent);
+    });
 
     final double elapsedHours = _stopwatch.elapsed.inSeconds / 3600.0;
     final double avgSpeed = tracker.avgSpeed > 0
