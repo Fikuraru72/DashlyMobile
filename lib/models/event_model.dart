@@ -118,7 +118,7 @@ class Event {
         monitoringEndOffset: json['monitoringEndOffset'] as int? ?? 240,
         monitoringWindow: json['monitoringWindow'] as Map<String, dynamic>?,
         bibNumber: json['bibNumber'] as String?,
-        bannerBase64: json['bannerBase64'] as String? ?? json['bannerImage'] as String?,
+        bannerBase64: json['bannerBase64'] as String? ?? json['bannerImage'] as String? ?? json['banner'] as String? ?? json['bannerUrl'] as String? ?? json['image'] as String?,
         latitude: json['latitude'] != null ? double.tryParse(json['latitude'].toString()) : null,
         longitude: json['longitude'] != null ? double.tryParse(json['longitude'].toString()) : null,
         participantState: _parseParticipantState(json['participantState'] as String?),
