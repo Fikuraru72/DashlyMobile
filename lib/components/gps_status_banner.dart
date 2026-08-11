@@ -1,16 +1,98 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import '../theme/dashly_theme.dart';
 
 /// ════════════════════════════════════════════════════════════════
-/// GpsStatusBanner — Real-Time Device GPS Alert Card ⚠️
+/// GpsStatusBanner — Real-Time Device GPS Alert Card & Pop-Up ⚠️
 /// ════════════════════════════════════════════════════════════════
 /// Monitors device Location Service status. If GPS is disabled,
-/// displays a prominent warning card with an "ENABLE GPS" button
-/// that directly opens Android/iOS Location Settings.
+/// provides both a Pop-Up Dialog and a Banner Card with an "AKTIFKAN GPS"
+/// button that directly opens Android/iOS Location Settings.
 /// ════════════════════════════════════════════════════════════════
 class GpsStatusBanner extends StatefulWidget {
   const GpsStatusBanner({super.key});
+
+  /// Static helper to check and show GPS Pop-Up Dialog if Location Service is disabled
+  static Future<void> checkAndShowPopup(BuildContext context) async {
+    try {
+      final enabled = await Geolocator.isLocationServiceEnabled();
+      if (!enabled && context.mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: true,
+          builder: (dialogContext) => AlertDialog(
+            backgroundColor: context.dashlyColors.surface,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+              side: const BorderSide(color: Colors.amber, width: 1.5),
+            ),
+            title: const Row(
+              children: [
+                Icon(Icons.location_off_rounded, color: Colors.amber, size: 28),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    "GPS NONAKTIF",
+                    style: TextStyle(
+                      color: Colors.amber,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 16,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            content: Text(
+              "Layanan lokasi GPS pada HP Anda saat ini nonaktif. Silakan aktifkan GPS untuk dapat melacak rute gowes dan berpartisipasi dalam event balap sepeda secara real-time.",
+              style: TextStyle(
+                color: context.dashlyColors.textSecondary,
+                fontSize: 13,
+                height: 1.4,
+              ),
+            ),
+            actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: Text(
+                  "NANTI",
+                  style: TextStyle(
+                    color: context.dashlyColors.textHint,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              ElevatedButton.icon(
+                onPressed: () async {
+                  Navigator.pop(dialogContext);
+                  await Geolocator.openLocationSettings();
+                },
+                icon: const Icon(Icons.settings_suggest_rounded, color: Colors.black, size: 18),
+                label: const Text(
+                  "AKTIFKAN GPS",
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 12,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.amber,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      print("Error checking GPS for popup: $e");
+    }
+  }
 
   @override
   State<GpsStatusBanner> createState() => _GpsStatusBannerState();
@@ -126,7 +208,7 @@ class _GpsStatusBannerState extends State<GpsStatusBanner> {
               onPressed: _openGpsSettings,
               icon: const Icon(Icons.settings_suggest_rounded, size: 16, color: Colors.black),
               label: const Text(
-                "ENABLE GPS",
+                "AKTIFKAN GPS",
                 style: TextStyle(
                   color: Colors.black,
                   fontWeight: FontWeight.w900,

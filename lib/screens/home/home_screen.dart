@@ -24,8 +24,10 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      PermissionOnboardingDialog.checkAndShow(context);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await PermissionOnboardingDialog.checkAndShow(context);
+      if (!mounted) return;
+      GpsStatusBanner.checkAndShowPopup(context);
       context.read<EventProvider>().loadMyEvents();
       context.read<DashboardProvider>().fetchDashboardData();
     });

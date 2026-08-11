@@ -18,11 +18,10 @@ class PermissionOnboardingDialog extends StatefulWidget {
   /// Static helper to check and show onboarding if permissions are missing.
   static Future<void> checkAndShow(BuildContext context) async {
     final locationWhenInUse = await Permission.locationWhenInUse.status;
-    final locationAlways = await Permission.locationAlways.status;
     final camera = await Permission.camera.status;
 
     // Show onboarding if any critical permission is not granted yet
-    if (!locationWhenInUse.isGranted || !locationAlways.isGranted || !camera.isGranted) {
+    if (!locationWhenInUse.isGranted || !camera.isGranted) {
       if (!context.mounted) return;
       await showModalBottomSheet(
         context: context,
@@ -45,11 +44,8 @@ class _PermissionOnboardingDialogState extends State<PermissionOnboardingDialog>
     setState(() => _isProcessing = true);
 
     try {
-      // 1. Location (When In Use first, then Always for background GPS tracking)
-      final statusWhenInUse = await Permission.locationWhenInUse.request();
-      if (statusWhenInUse.isGranted) {
-        await Permission.locationAlways.request();
-      }
+      // 1. Location (When In Use / When Open App)
+      await Permission.locationWhenInUse.request();
 
       // 2. Camera (for QR Code scanner & photo capture)
       await Permission.camera.request();
@@ -179,8 +175,8 @@ class _PermissionOnboardingDialogState extends State<PermissionOnboardingDialog>
           _buildPermissionItem(
             context,
             icon: Icons.location_on_rounded,
-            title: "Location Access (Always)",
-            subtitle: "Continuous background GPS route tracking during cycling events.",
+            title: "Location Access (When Using App)",
+            subtitle: "Real-time GPS route tracking while using Dashly during cycling events.",
           ),
           const SizedBox(height: 12),
           _buildPermissionItem(
