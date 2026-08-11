@@ -701,8 +701,17 @@ class _TrackingScreenState extends State<TrackingScreen> {
                               totalParticipants: totalRunners,
                             );
 
-                            if (mounted) {
-                              context.read<EventProvider>().finishParticipant(widget.eventId);
+                             if (mounted) {
+                              context.read<EventProvider>().finishParticipant(
+                                widget.eventId,
+                                stats: {
+                                  'durationSeconds': elapsed.inSeconds,
+                                  'totalDistanceMeters': (dist * 1000).toInt(),
+                                  'avgSpeedKmh': avgSpd,
+                                  'maxSpeedKmh': maxSpd,
+                                  'elevationGainMeters': elev.toInt(),
+                                },
+                              );
                               Navigator.pushReplacement(
                                 context,
                                 MaterialPageRoute(

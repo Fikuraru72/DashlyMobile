@@ -153,8 +153,8 @@ class EventProvider extends ChangeNotifier {
   }
 
   /// Marks participant as FINISHED immediately and reloads myEvents state.
-  Future<bool> finishParticipant(int eventId) async {
-    final success = await _eventService.finishParticipant(eventId);
+  Future<bool> finishParticipant(int eventId, {Map<String, dynamic>? stats}) async {
+    final success = await _eventService.finishParticipant(eventId, stats: stats);
     if (success) {
       await loadMyEvents(isSilent: true);
     }

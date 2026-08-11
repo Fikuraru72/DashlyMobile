@@ -43,6 +43,11 @@ class Event {
   final int? totalElevationMeters;
   final List<dynamic>? altitudeProfile;
 
+  final int? durationSeconds;
+  final double? avgSpeedKmh;
+  final double? maxSpeedKmh;
+  final int? elevationGainMeters;
+
   const Event({
     required this.id,
     required this.name,
@@ -67,6 +72,10 @@ class Event {
     this.totalDistanceMeters,
     this.totalElevationMeters,
     this.altitudeProfile,
+    this.durationSeconds,
+    this.avgSpeedKmh,
+    this.maxSpeedKmh,
+    this.elevationGainMeters,
   });
 
   /// Computed: The actual time monitoring window opens
@@ -125,6 +134,10 @@ class Event {
         totalDistanceMeters: json['totalDistanceMeters'] != null ? (json['totalDistanceMeters'] as num).toInt() : null,
         totalElevationMeters: json['totalElevationMeters'] != null ? (json['totalElevationMeters'] as num).toInt() : null,
         altitudeProfile: json['altitudeProfile'] is List ? json['altitudeProfile'] as List<dynamic> : null,
+        durationSeconds: (json['durationSeconds'] as num?)?.toInt() ?? (json['duration_seconds'] as num?)?.toInt(),
+        avgSpeedKmh: (json['avgSpeedKmh'] as num?)?.toDouble() ?? (json['avg_speed_kmh'] as num?)?.toDouble(),
+        maxSpeedKmh: (json['maxSpeedKmh'] as num?)?.toDouble() ?? (json['max_speed_kmh'] as num?)?.toDouble(),
+        elevationGainMeters: (json['elevationGainMeters'] as num?)?.toInt() ?? (json['elevation_gain_meters'] as num?)?.toInt(),
       );
 
   static EventStatus _parseStatus(String? status) {

@@ -62,9 +62,12 @@ class EventService {
   }
 
   /// Marks participant as FINISHED immediately for an event
-  Future<bool> finishParticipant(int eventId) async {
+  Future<bool> finishParticipant(int eventId, {Map<String, dynamic>? stats}) async {
     try {
-      final response = await _dio.post('/events/$eventId/finish-participant');
+      final response = await _dio.post(
+        '/events/$eventId/finish-participant',
+        data: stats,
+      );
       final responseData = response.data as Map<String, dynamic>;
       return responseData['success'] == true;
     } on DioException catch (e) {
