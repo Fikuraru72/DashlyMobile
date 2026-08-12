@@ -112,26 +112,26 @@ class _LoginScreenState extends State<LoginScreen>
                     children: [
                       // ── Logo / Branding ──────────────────────────
                       Container(
-                        width: 80,
-                        height: 80,
+                        width: 90,
+                        height: 90,
+                        padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          gradient: context.dashlyColors.accentGradient,
+                          color: context.dashlyColors.surface,
                           boxShadow: DashlyTheme.glowShadow(blur: 30),
                         ),
-                        child: Icon(
-                          Icons.directions_run_rounded,
-                          color: Colors.black,
-                          size: 40,
+                        child: Image.asset(
+                          'assets/logo.png',
+                          fit: BoxFit.contain,
                         ),
                       ),
                       const SizedBox(height: 24),
                       Text(
-                        'DASHLY',
+                        'ECO RACE MAPS',
                         style: Theme.of(context).textTheme.headlineMedium
                             ?.copyWith(
                               fontWeight: FontWeight.w900,
-                              letterSpacing: 4,
+                              letterSpacing: 2,
                               color: context.dashlyColors.accent,
                             ),
                       ),

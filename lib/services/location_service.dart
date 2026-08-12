@@ -32,8 +32,8 @@ class LocationService {
         forceLocationManager: false, // Use Fused Location Provider for GPS + Wi-Fi + Gyroscope sensor fusion (reduces drift)
         intervalDuration: const Duration(seconds: 2),
         foregroundNotificationConfig: const ForegroundNotificationConfig(
-          notificationText: "Running Dashly tracking in the background",
-          notificationTitle: "Dashly Live Tracking",
+          notificationText: "Running Eco Race Maps tracking in the background",
+          notificationTitle: "Eco Race Maps Live Tracking",
           enableWakeLock: true,
         ),
       );

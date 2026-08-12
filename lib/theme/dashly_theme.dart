@@ -61,8 +61,8 @@ class DashlyColors extends ThemeExtension<DashlyColors> {
 class DashlyTheme {
   DashlyTheme._();
 
-  // ─── Shared Shared Constants ──────────────────────────────
-  static const Color accent = Color(0xFF39FF14);
+  // ─── Shared Constants ──────────────────────────────────────
+  static const Color accent = Color(0xFF4CB9E7);
   static const Color errorObj = Color(0xFFFF4C4C);
 
   // ─── Shadows & Radii ──────────────────────────────────────
@@ -85,15 +85,15 @@ class DashlyTheme {
       background: const Color(0xFFF5F6FA),
       surface: const Color(0xFFFFFFFF),
       surfaceLight: const Color(0xFFE4E6EB),
-      accent: const Color(0xFF1FA60E), // darker green for light bg
-      accentDim: const Color(0xFF136E08),
+      accent: const Color(0xFF359ED0),
+      accentDim: const Color(0xFF2682AF),
       textPrimary: const Color(0xFF1C1E21),
       textSecondary: const Color(0xFF606770),
       textHint: const Color(0xFF8D949E),
       error: errorObj,
       divider: const Color(0xFFCED0D4),
       accentGradient: const LinearGradient(
-        colors: [Color(0xFF39FF14), Color(0xFF00E676)],
+        colors: [Color(0xFF4CB9E7), Color(0xFF2B97C6)],
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
       ),
@@ -113,14 +113,14 @@ class DashlyTheme {
       surface: const Color(0xFF1E1E1E),
       surfaceLight: const Color(0xFF2A2A2A),
       accent: accent,
-      accentDim: const Color(0xFF2BCC10),
+      accentDim: const Color(0xFF389BCA),
       textPrimary: const Color(0xFFFFFFFF),
       textSecondary: const Color(0xFFB0B0B0),
       textHint: const Color(0xFF757575),
       error: errorObj,
       divider: const Color(0xFF333333),
       accentGradient: const LinearGradient(
-        colors: [Color(0xFF39FF14), Color(0xFF00E676)],
+        colors: [Color(0xFF4CB9E7), Color(0xFF2B97C6)],
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
       ),
