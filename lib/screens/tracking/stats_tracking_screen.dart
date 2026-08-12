@@ -36,6 +36,7 @@ class StatsTrackingScreen extends StatefulWidget {
 
 class _StatsTrackingScreenState extends State<StatsTrackingScreen> {
   late Stopwatch _stopwatch;
+  late final ValueNotifier<Duration> _elapsedNotifier;
   late Timer _timer;
   bool _isSosLongPressing = false;
   double _sosProgress = 0.0;
@@ -45,9 +46,12 @@ class _StatsTrackingScreenState extends State<StatsTrackingScreen> {
   @override
   void initState() {
     super.initState();
+    _elapsedNotifier = ValueNotifier(Duration.zero);
     _stopwatch = Stopwatch();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (mounted) setState(() {});
+      if (mounted && _stopwatch.isRunning) {
+        _elapsedNotifier.value = _stopwatch.elapsed;
+      }
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -74,6 +78,7 @@ class _StatsTrackingScreenState extends State<StatsTrackingScreen> {
     _timer.cancel();
     _stopwatch.stop();
     _sosTimer?.cancel();
+    _elapsedNotifier.dispose();
     super.dispose();
   }
 
@@ -588,7 +593,12 @@ class _StatsTrackingScreenState extends State<StatsTrackingScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildHeroMetricItem("DURATION", _formatDuration(_stopwatch.elapsed), ""),
+              ValueListenableBuilder<Duration>(
+                valueListenable: _elapsedNotifier,
+                builder: (context, elapsed, _) {
+                  return _buildHeroMetricItem("DURATION", _formatDuration(elapsed), "");
+                },
+              ),
               _buildHeroMetricDivider(),
               _buildHeroMetricItem("DISTANCE", tracker.totalDistance.toStringAsFixed(2), "KM"),
               _buildHeroMetricDivider(),

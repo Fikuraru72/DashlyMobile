@@ -31,6 +31,7 @@ class TrackingScreen extends StatefulWidget {
 
 class _TrackingScreenState extends State<TrackingScreen> {
   late Stopwatch _stopwatch;
+  late final ValueNotifier<Duration> _elapsedNotifier;
   late Timer _timer;
   MapLibreMapController? _mapController;
   bool _isSosLongPressing = false;
@@ -42,9 +43,12 @@ class _TrackingScreenState extends State<TrackingScreen> {
   @override
   void initState() {
     super.initState();
+    _elapsedNotifier = ValueNotifier(Duration.zero);
     _stopwatch = Stopwatch();
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (mounted) setState(() {});
+      if (mounted && _stopwatch.isRunning) {
+        _elapsedNotifier.value = _stopwatch.elapsed;
+      }
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -70,6 +74,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
     _timer.cancel();
     _stopwatch.stop();
     _sosTimer?.cancel();
+    _elapsedNotifier.dispose();
     super.dispose();
   }
 
@@ -336,14 +341,16 @@ class _TrackingScreenState extends State<TrackingScreen> {
         backgroundColor: Colors.black,
         body: Stack(
           children: [
-            // 1. FULL-SCREEN MAP
+            // 1. LIVE MAP LAYER (Full screen)
             Positioned.fill(
-              child: LiveMapWidget(
-                currentPosition: tracker.currentPosition,
-                routeGeojson: currentEvent?.routeGeojson,
-                onControllerCreated: (controller) {
-                  _mapController = controller;
-                },
+              child: RepaintBoundary(
+                child: LiveMapWidget(
+                  currentPosition: tracker.currentPosition,
+                  routeGeojson: currentEvent?.routeGeojson,
+                  onControllerCreated: (controller) {
+                    _mapController = controller;
+                  },
+                ),
               ),
             ),
 
@@ -717,7 +724,12 @@ class _TrackingScreenState extends State<TrackingScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildHeroMetricItem("DURATION", _formatDuration(_stopwatch.elapsed), ""),
+              ValueListenableBuilder<Duration>(
+                valueListenable: _elapsedNotifier,
+                builder: (context, elapsed, _) {
+                  return _buildHeroMetricItem("DURATION", _formatDuration(elapsed), "");
+                },
+              ),
               _buildHeroMetricDivider(),
               _buildHeroMetricItem("DISTANCE", tracker.totalDistance.toStringAsFixed(2), "KM"),
               _buildHeroMetricDivider(),
@@ -730,10 +742,12 @@ class _TrackingScreenState extends State<TrackingScreen> {
           if (!_isMetricsPanelCollapsed) ...[
             const SizedBox(height: 12),
             if (altitudeProfile.isNotEmpty)
-              AltitudeChartWidget(
-                altitudeProfile: altitudeProfile,
-                currentDistanceMeters: tracker.totalDistance * 1000,
-                otherRunners: tracker.otherRunners,
+              RepaintBoundary(
+                child: AltitudeChartWidget(
+                  altitudeProfile: altitudeProfile,
+                  currentDistanceMeters: tracker.totalDistance * 1000,
+                  otherRunners: tracker.otherRunners,
+                ),
               )
             else
               Container(
