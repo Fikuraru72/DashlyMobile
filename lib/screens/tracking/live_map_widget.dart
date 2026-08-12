@@ -39,6 +39,8 @@ class _LiveMapWidgetState extends State<LiveMapWidget> {
   MapLibreMapController? _mapController;
   bool _styleLoaded = false;
   bool _isRouteDrawn = false;
+  bool _hasFittedOverview = false;
+  bool _isFollowingUser = false;
   double _currentBearing = 0.0;
   DashlyLatLng? _lastAnimatedPosition;
 
@@ -61,10 +63,21 @@ class _LiveMapWidgetState extends State<LiveMapWidget> {
       _drawRoute();
     }
 
-    // Smoothly center camera target on participant pointer and rotate bearing when turning (> 3m movement)
+    // Camera follow mode: only active if user enabled follow or after significant movement (> 10m)
     if (_styleLoaded && _mapController != null && widget.currentPosition != null) {
       final pos = widget.currentPosition!;
       final oldPos = oldWidget.currentPosition;
+
+      // Auto-enable follow mode if participant starts moving significantly (> 10m)
+      if (!_isFollowingUser && oldPos != null) {
+        final dLat = (pos.latitude - oldPos.latitude).abs();
+        final dLng = (pos.longitude - oldPos.longitude).abs();
+        if (dLat > 0.0001 || dLng > 0.0001) {
+          _isFollowingUser = true;
+        }
+      }
+
+      if (!_isFollowingUser) return;
 
       if (_lastAnimatedPosition != null) {
         final dLat = (pos.latitude - _lastAnimatedPosition!.latitude).abs();
@@ -255,9 +268,57 @@ class _LiveMapWidgetState extends State<LiveMapWidget> {
 
       _isRouteDrawn = true;
       debugPrint("🛣️ [LiveMapWidget] Route & Start/Finish markers rendered successfully.");
+
+      // Auto zoom-out overview: fit full route shape when map is first drawn
+      if (coords != null && coords.isNotEmpty && !_hasFittedOverview) {
+        _hasFittedOverview = true;
+        final bounds = _calculateRouteBounds(coords);
+        if (bounds != null) {
+          Future.delayed(const Duration(milliseconds: 300), () {
+            try {
+              _mapController?.animateCamera(
+                CameraUpdate.newLatLngBounds(
+                  bounds,
+                  top: 120,
+                  bottom: 260,
+                  left: 40,
+                  right: 40,
+                ),
+              );
+              debugPrint("🗺️ [LiveMapWidget] Initial full route overview bounds fitted.");
+            } catch (e) {
+              debugPrint("⚠️ [LiveMapWidget] Route overview fit bounds error: $e");
+            }
+          });
+        }
+      }
     } catch (e) {
       debugPrint("⚠️ [LiveMapWidget] Failed to draw route: $e");
     }
+  }
+
+  LatLngBounds? _calculateRouteBounds(List<dynamic> coords) {
+    if (coords.isEmpty) return null;
+    double minLat = 90.0, maxLat = -90.0;
+    double minLng = 180.0, maxLng = -180.0;
+
+    for (final pt in coords) {
+      if (pt is List && pt.length >= 2) {
+        final lng = (pt[0] as num).toDouble();
+        final lat = (pt[1] as num).toDouble();
+        if (lat < minLat) minLat = lat;
+        if (lat > maxLat) maxLat = lat;
+        if (lng < minLng) minLng = lng;
+        if (lng > maxLng) maxLng = lng;
+      }
+    }
+
+    if (minLat >= maxLat || minLng >= maxLng) return null;
+
+    return LatLngBounds(
+      southwest: LatLng(minLat, minLng),
+      northeast: LatLng(maxLat, maxLng),
+    );
   }
 
   @override
