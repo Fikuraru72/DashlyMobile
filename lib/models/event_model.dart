@@ -120,7 +120,9 @@ class Event {
         currentCount: json['currentCount'] is num ? (json['currentCount'] as num).toInt() : (int.tryParse(json['currentCount']?.toString() ?? '0') ?? 0),
         maxParticipants: json['maxParticipants'] is num ? (json['maxParticipants'] as num).toInt() : (int.tryParse(json['maxParticipants']?.toString() ?? '0') ?? 0),
         dateEvent: json['dateEvent'] != null ? (DateTime.tryParse(json['dateEvent'].toString()) ?? DateTime.now()) : DateTime.now(),
-        routeGeojson: json['routeGeojson'] is Map<String, dynamic> ? json['routeGeojson'] as Map<String, dynamic> : null,
+        routeGeojson: json['routeGeojson'] is Map<String, dynamic>
+            ? json['routeGeojson'] as Map<String, dynamic>
+            : (json['route_geojson'] is Map<String, dynamic> ? json['route_geojson'] as Map<String, dynamic> : null),
         startTime: json['startTime'] != null ? DateTime.tryParse(json['startTime'].toString()) : null,
         endTime: json['endTime'] != null ? DateTime.tryParse(json['endTime'].toString()) : null,
         monitoringStartOffset: json['monitoringStartOffset'] is num ? (json['monitoringStartOffset'] as num).toInt() : 60,
@@ -133,7 +135,9 @@ class Event {
         participantState: _parseParticipantState(json['participantState']?.toString()),
         totalDistanceMeters: json['totalDistanceMeters'] != null ? (json['totalDistanceMeters'] as num).toInt() : null,
         totalElevationMeters: json['totalElevationMeters'] != null ? (json['totalElevationMeters'] as num).toInt() : null,
-        altitudeProfile: json['altitudeProfile'] is List ? json['altitudeProfile'] as List<dynamic> : null,
+        altitudeProfile: json['altitudeProfile'] is List
+            ? json['altitudeProfile'] as List<dynamic>
+            : (json['altitude_profile'] is List ? json['altitude_profile'] as List<dynamic> : null),
         durationSeconds: (json['durationSeconds'] as num?)?.toInt() ?? (json['duration_seconds'] as num?)?.toInt(),
         avgSpeedKmh: (json['avgSpeedKmh'] as num?)?.toDouble() ?? (json['avg_speed_kmh'] as num?)?.toDouble(),
         maxSpeedKmh: (json['maxSpeedKmh'] as num?)?.toDouble() ?? (json['max_speed_kmh'] as num?)?.toDouble(),

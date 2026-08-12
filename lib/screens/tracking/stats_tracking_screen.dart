@@ -163,11 +163,10 @@ class _StatsTrackingScreenState extends State<StatsTrackingScreen> {
     }
   }
 
-  // ignore: unused_element
   List<dynamic> _getEffectiveAltitudeProfile(EventProvider eventProvider) {
-    dynamic event = eventProvider.currentEvent;
+    dynamic event = eventProvider.currentEvent ?? eventProvider.getCachedEvent(widget.eventId);
 
-    // Instant Fallback: If currentEvent is null or lacks route data, use cached myEvents in eventProvider
+    // Instant Fallback: If currentEvent is null or lacks route data, check myEvents in eventProvider
     if (event == null || (event.altitudeProfile == null && event.routeGeojson == null)) {
       try {
         event = eventProvider.myEvents.firstWhere((e) => e.id == widget.eventId);

@@ -10,6 +10,7 @@ class EventProvider extends ChangeNotifier {
   String? _successMessage;
   String? _errorMessage;
   Event? _currentEvent;
+  final Map<int, Event> _eventCache = {};
   Timer? _pollTimer;
 
   List<Event> _myEvents = [];
@@ -20,6 +21,7 @@ class EventProvider extends ChangeNotifier {
   String? get successMessage => _successMessage;
   String? get errorMessage => _errorMessage;
   Event? get currentEvent => _currentEvent;
+  Event? getCachedEvent(int eventId) => _eventCache[eventId];
 
   List<Event> get myEvents => _myEvents;
   bool get isLoadingMyEvents => _isLoadingMyEvents;
@@ -115,10 +117,15 @@ class EventProvider extends ChangeNotifier {
     }
   }
 
-  /// Fetches full event details and stores as currentEvent.
+  /// Fetches full event details and stores as currentEvent (with instant cache retrieval).
   Future<Event?> fetchEvent(int eventId) async {
+    if (_eventCache.containsKey(eventId)) {
+      _currentEvent = _eventCache[eventId];
+      notifyListeners();
+    }
     final event = await _eventService.fetchEventDetails(eventId);
     if (event != null) {
+      _eventCache[eventId] = event;
       _currentEvent = event;
       notifyListeners();
     }
