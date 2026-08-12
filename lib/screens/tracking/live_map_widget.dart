@@ -354,7 +354,7 @@ class _LiveMapWidgetState extends State<LiveMapWidget> {
       onStyleLoadedCallback: _onStyleLoaded,
       trackCameraPosition: true,
       myLocationEnabled: true,
-      myLocationTrackingMode: MyLocationTrackingMode.tracking,
+      myLocationTrackingMode: MyLocationTrackingMode.none,
       myLocationRenderMode: MyLocationRenderMode.normal,
       compassEnabled: false,
       attributionButtonMargins: Point(-10, -10),
