@@ -1,15 +1,14 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 import '../../core/utils/geo_utils.dart';
 
 /// ════════════════════════════════════════════════════════════════
-/// Live Map Widget — MapLibre GL + MapTiler Dark Mode
+/// Live Map Widget — MapLibre GL Native 3D Compass Tracking
 /// ════════════════════════════════════════════════════════════════
-/// Shows the user's real-time GPS location on a dark-themed map.
-/// Uses a single camera controller architecture with C++ thread mutex
-/// locking and distance throttling to prevent native Android crashes.
+/// Displays real-time GPS location on a dark-themed map.
+/// Delegates 3D camera follow & compass rotation natively to MapLibre's
+/// C++ engine (myLocationTrackingMode.trackingCompass), eliminating
+/// redundant JNI animateCamera calls in didUpdateWidget for 100% stability.
 /// ════════════════════════════════════════════════════════════════
 
 // MapTiler API Key — dataviz-dark style
@@ -39,105 +38,14 @@ class _LiveMapWidgetState extends State<LiveMapWidget> {
   MapLibreMapController? _mapController;
   bool _styleLoaded = false;
   bool _isRouteDrawn = false;
-  bool _isCameraAnimating = false;
-  DateTime? _lastAnimationTime;
-  double _currentBearing = 0.0;
-  double _userZoomLevel = 18.0;
-  DashlyLatLng? _lastAnimatedPosition;
-
-  double _calculateBearing(double lat1, double lng1, double lat2, double lng2) {
-    final dLng = (lng2 - lng1) * (pi / 180.0);
-    final phi1 = lat1 * (pi / 180.0);
-    final phi2 = lat2 * (pi / 180.0);
-    final y = sin(dLng) * cos(phi2);
-    final x = cos(phi1) * sin(phi2) - sin(phi1) * cos(phi2) * cos(dLng);
-    final bearing = atan2(y, x) * (180.0 / pi);
-    return (bearing + 360.0) % 360.0;
-  }
 
   @override
   void didUpdateWidget(LiveMapWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
+
+    // Only update map route if GeoJSON has changed
     if (oldWidget.routeGeojson != widget.routeGeojson || !_isRouteDrawn) {
       _drawRoute();
-    }
-
-    // SAFEGUARD 1: Do not attempt camera animation if map style is not fully loaded or controller is null
-    if (!_styleLoaded || _mapController == null || widget.currentPosition == null) {
-      return;
-    }
-
-    // SAFEGUARD 2: Camera Mutex & Debounce — prevent overlapping C++ animation calls
-    final now = DateTime.now();
-    if (_isCameraAnimating) return;
-    if (_lastAnimationTime != null && now.difference(_lastAnimationTime!).inMilliseconds < 500) {
-      return;
-    }
-
-    final pos = widget.currentPosition!;
-    final oldPos = oldWidget.currentPosition;
-
-    // SAFEGUARD 3: Distance Throttling — only animate camera if position moved > 3 meters (~0.00003 deg)
-    if (_lastAnimatedPosition != null) {
-      final dLat = (pos.latitude - _lastAnimatedPosition!.latitude).abs();
-      final dLng = (pos.longitude - _lastAnimatedPosition!.longitude).abs();
-      if (dLat < 0.00003 && dLng < 0.00003) {
-        return;
-      }
-    }
-
-    // Determine heading/bearing: prefer position.heading, fallback to movement vector calculation
-    if (pos.heading > 0) {
-      _currentBearing = pos.heading;
-    } else if (oldPos != null) {
-      final dLat = (pos.latitude - oldPos.latitude).abs();
-      final dLng = (pos.longitude - oldPos.longitude).abs();
-      if (dLat > 0.000003 || dLng > 0.000003) {
-        _currentBearing = _calculateBearing(
-          oldPos.latitude,
-          oldPos.longitude,
-          pos.latitude,
-          pos.longitude,
-        );
-      }
-    }
-
-    _triggerSafeCameraAnimation(pos);
-  }
-
-  Future<void> _triggerSafeCameraAnimation(DashlyLatLng pos) async {
-    if (!mounted || _mapController == null || !_styleLoaded) return;
-
-    _isCameraAnimating = true;
-    _lastAnimationTime = DateTime.now();
-
-    try {
-      // Safely read user's current zoom level dynamically from cameraPosition, preserving user zoom scale
-      try {
-        if (_mapController?.cameraPosition?.zoom != null) {
-          _userZoomLevel = _mapController!.cameraPosition!.zoom;
-        }
-      } catch (_) {}
-
-      final double activeZoom = _userZoomLevel;
-
-      await _mapController?.animateCamera(
-        CameraUpdate.newCameraPosition(
-          CameraPosition(
-            target: LatLng(pos.latitude, pos.longitude),
-            zoom: activeZoom,
-            tilt: 55.0,
-            bearing: _currentBearing,
-          ),
-        ),
-      );
-      _lastAnimatedPosition = pos;
-    } catch (e) {
-      debugPrint("⚠️ [LiveMapWidget] Camera animation error caught safely: $e");
-    } finally {
-      if (mounted) {
-        _isCameraAnimating = false;
-      }
     }
   }
 
@@ -149,15 +57,6 @@ class _LiveMapWidgetState extends State<LiveMapWidget> {
   void _onStyleLoaded() {
     _styleLoaded = true;
     _drawRoute();
-
-    // SAFEGUARD 4: 500ms delayed initial camera centering to ensure OpenGL surface texture binding
-    if (widget.currentPosition != null) {
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (mounted && widget.currentPosition != null) {
-          _triggerSafeCameraAnimation(widget.currentPosition!);
-        }
-      });
-    }
   }
 
   /// Normalize any GeoJSON variant into a FeatureCollection that MapLibre expects.
@@ -238,8 +137,8 @@ class _LiveMapWidgetState extends State<LiveMapWidget> {
       onStyleLoadedCallback: _onStyleLoaded,
       trackCameraPosition: true,
       myLocationEnabled: true,
-      myLocationTrackingMode: MyLocationTrackingMode.tracking,
-      myLocationRenderMode: MyLocationRenderMode.normal,
+      myLocationTrackingMode: MyLocationTrackingMode.trackingCompass,
+      myLocationRenderMode: MyLocationRenderMode.compass,
       compassEnabled: false,
       attributionButtonMargins: const Point(-100, -100), // hide off-screen
     );
