@@ -712,21 +712,6 @@ class _TrackingScreenState extends State<TrackingScreen> {
 
   Widget _buildDockedBottomPanel(TrackingProvider tracker, EventProvider eventProvider) {
     final altitudeProfile = _getEffectiveAltitudeProfile(eventProvider);
-    final currentEvent = eventProvider.currentEvent;
-
-    double totalRouteKm = 0.0;
-    if (currentEvent?.totalDistanceMeters != null && currentEvent!.totalDistanceMeters! > 0) {
-      totalRouteKm = currentEvent.totalDistanceMeters! / 1000.0;
-    } else if (altitudeProfile.isNotEmpty) {
-      final lastPt = altitudeProfile.last;
-      if (lastPt is Map && lastPt['distance'] != null) {
-        totalRouteKm = (lastPt['distance'] as num).toDouble() / 1000.0;
-      }
-    }
-
-    final double remainingKm = totalRouteKm > tracker.totalDistance
-        ? (totalRouteKm - tracker.totalDistance)
-        : 0.0;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
@@ -772,7 +757,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
 
           const SizedBox(height: 10),
 
-          // 4 HERO METRICS ROW: DURATION | DISTANCE | REMAINING | ELEV GAIN
+          // 3 HERO METRICS ROW: DURATION | DISTANCE | ELEV GAIN
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
@@ -784,8 +769,6 @@ class _TrackingScreenState extends State<TrackingScreen> {
               ),
               _buildHeroMetricDivider(),
               _buildHeroMetricItem("DISTANCE", tracker.totalDistance.toStringAsFixed(2), "KM"),
-              _buildHeroMetricDivider(),
-              _buildHeroMetricItem("REMAINING", remainingKm.toStringAsFixed(2), "KM"),
               _buildHeroMetricDivider(),
               _buildHeroMetricItem("ELEV GAIN", tracker.elevationGain.toStringAsFixed(0), "M"),
             ],
