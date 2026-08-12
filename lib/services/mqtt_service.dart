@@ -32,7 +32,10 @@ class MqttService {
   }
 
   MqttService() {
-    // ── TCP connection on port 1883 — NO WebSocket for mobile ──
+    _initClient();
+  }
+
+  void _initClient() {
     _client = MqttServerClient.withPort(
       AppConstants.mqttHost,
       'dashly_mobile_${DateTime.now().millisecondsSinceEpoch}',
@@ -52,6 +55,15 @@ class MqttService {
 
   /// Connect to the MQTT broker with retry logic.
   Future<bool> connect(int eventId, int userId) async {
+    // If switching to a different event while connected, cleanly disconnect previous event session first
+    if (_isConnected && _currentEventId != null && _currentEventId != eventId) {
+      print('MQTT: 🔄 Switching event from $_currentEventId to $eventId. Disconnecting previous session...');
+      publishStatus('OFFLINE');
+      disconnect();
+      await Future.delayed(const Duration(milliseconds: 300));
+      _initClient();
+    }
+
     _currentEventId = eventId;
     _currentUserId = userId;
     
@@ -108,7 +120,10 @@ class MqttService {
     _isManualDisconnect = true;
     _reconnectTimer?.cancel();
     _reconnectTimer = null;
-    _client.disconnect();
+    _isConnected = false;
+    try {
+      _client.disconnect();
+    } catch (_) {}
   }
 
   // ── Callbacks ─────────────────────────────────────────────
