@@ -58,7 +58,7 @@ class MqttService {
     // If switching to a different event while connected, cleanly disconnect previous event session first
     if (_isConnected && _currentEventId != null && _currentEventId != eventId) {
       print('MQTT: 🔄 Switching event from $_currentEventId to $eventId. Disconnecting previous session...');
-      publishStatus('OFFLINE');
+      await publishStatus('OFFLINE');
       disconnect();
       await Future.delayed(const Duration(milliseconds: 300));
       _initClient();
@@ -240,7 +240,7 @@ class MqttService {
   // ── Publishing ────────────────────────────────────────────
 
   /// Publish a generic status (e.g., OFFLINE for manual disconnect)
-  void publishStatus(String status) {
+  Future<void> publishStatus(String status) async {
     if (!_isConnected || _currentEventId == null || _currentUserId == null) return;
     
     final String topic = 'dashly/events/$_currentEventId/p/$_currentUserId/status';
@@ -250,8 +250,17 @@ class MqttService {
     builder.addString(payload);
     
     // Retain so new subscribers (dashboard refresh) immediately see offline state
-    _client.publishMessage(topic, MqttQos.atLeastOnce, builder.payload!, retain: true);
-    print('MQTT: 📤 Published status $status to $topic');
+    final msgId = _client.publishMessage(topic, MqttQos.atLeastOnce, builder.payload!, retain: true);
+    print('MQTT: 📤 Published status $status (msgId: $msgId) to $topic');
+
+    try {
+      if (_client.published != null) {
+        await _client.published!
+            .where((MqttPublishMessage msg) => msg.variableHeader!.messageIdentifier == msgId)
+            .first
+            .timeout(const Duration(milliseconds: 500));
+      }
+    } catch (_) {}
   }
 
   /// Publishes location data for the Visual PoC (dashly/location topic).
