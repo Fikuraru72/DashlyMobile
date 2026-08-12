@@ -22,8 +22,8 @@ class _SplashScreenState extends State<SplashScreen> {
   Future<void> _checkSession() async {
     final auth = context.read<AuthProvider>();
 
-    // Give a small delay for UI effect
-    await Future.delayed(const Duration(seconds: 2));
+    // Give a small smooth transition delay
+    await Future.delayed(const Duration(milliseconds: 300));
 
     try {
       final success = await auth.tryAutoLogin();
