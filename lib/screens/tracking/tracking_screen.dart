@@ -271,7 +271,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
     final rank = tracker.currentRank;
     final totalRunners = tracker.totalParticipants;
 
-    tracker.stopTracking();
+    await tracker.stopTracking();
     _stopwatch.stop();
 
     // Save race summary locally into SQLite
@@ -288,7 +288,9 @@ class _TrackingScreenState extends State<TrackingScreen> {
     );
 
     if (mounted) {
-      context.read<EventProvider>().finishParticipant(
+      final nav = Navigator.of(context);
+      final eventProv = context.read<EventProvider>();
+      eventProv.finishParticipant(
         widget.eventId,
         stats: {
           'durationSeconds': elapsed.inSeconds,
@@ -298,8 +300,8 @@ class _TrackingScreenState extends State<TrackingScreen> {
           'elevationGainMeters': elev.toInt(),
         },
       );
-      Navigator.pushReplacement(
-        context,
+      eventProv.clearCurrentEvent();
+      nav.pushReplacement(
         MaterialPageRoute(
           builder: (_) => RaceSummaryScreen(
             eventId: widget.eventId,
