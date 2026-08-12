@@ -437,7 +437,11 @@ class _StatsTrackingScreenState extends State<StatsTrackingScreen> {
           InkWell(
             onTap: () async {
               if (await _showExitConfirmation() && mounted) {
-                Navigator.pop(context);
+                final nav = Navigator.of(context);
+                final eventProv = context.read<EventProvider>();
+                await context.read<TrackingProvider>().stopTracking();
+                eventProv.clearCurrentEvent();
+                nav.pop();
               }
             },
             child: Padding(
