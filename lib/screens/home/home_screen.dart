@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../providers/event_provider.dart';
+import '../../providers/tracking_provider.dart';
 import '../../models/event_model.dart';
 import '../../theme/dashly_theme.dart';
 import '../tracking/tracking_mode_dialog.dart';
@@ -50,11 +51,10 @@ class _HomeScreenState extends State<HomeScreen> {
     final user = auth.currentUser;
     final stats = dash.stats;
 
-    // Find active event (newest tracking, confirmed, or event status is START)
+    // Find active event (exclude finished events)
     final activeEvents = eventProvider.myEvents.where((e) => 
-      e.status == EventStatus.start || 
-      e.participantState == ParticipantState.tracking || 
-      e.participantState == ParticipantState.confirmed
+      e.participantState != ParticipantState.finished &&
+      e.status != EventStatus.finished
     ).toList()
       ..sort((a, b) => b.dateEvent.compareTo(a.dateEvent));
 
@@ -337,7 +337,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildActiveEventCard(BuildContext context, Event event) {
-    bool isTracking = event.participantState == ParticipantState.tracking;
+    final tracker = context.watch<TrackingProvider>();
+    bool isTracking = tracker.isTracking && tracker.activeEventId == event.id;
     return GestureDetector(
       onTap: () {
         showTrackingModeSelectionDialog(context, eventId: event.id, eventName: event.name);

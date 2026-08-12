@@ -115,20 +115,7 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
     }
 
     if (_routePoints.isEmpty) {
-      // Fallback stylized cycling loop path
-      _routePoints = const [
-        DashlyLatLng(-7.250, 112.750),
-        DashlyLatLng(-7.245, 112.753),
-        DashlyLatLng(-7.240, 112.760),
-        DashlyLatLng(-7.238, 112.768),
-        DashlyLatLng(-7.242, 112.775),
-        DashlyLatLng(-7.248, 112.782),
-        DashlyLatLng(-7.255, 112.778),
-        DashlyLatLng(-7.262, 112.770),
-        DashlyLatLng(-7.260, 112.760),
-        DashlyLatLng(-7.254, 112.752),
-        DashlyLatLng(-7.250, 112.750),
-      ];
+      _routePoints = const [];
     }
   }
 
