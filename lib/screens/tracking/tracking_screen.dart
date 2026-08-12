@@ -258,11 +258,8 @@ class _TrackingScreenState extends State<TrackingScreen> {
     }
   }
 
-  /// Triggers the auto-finish sequence: haptic, stop tracking, save stats, navigate.
-  Future<void> _triggerAutoFinish(TrackingProvider tracker) async {
-    // Haptic feedback
-    HapticFeedback.heavyImpact();
-
+  Future<void> _saveAndFinishSession(TrackingProvider tracker, {bool navigateToSummary = true}) async {
+    // 1. Capture current telemetry state BEFORE stopping tracker
     final elapsed = _stopwatch.elapsed;
     final dist = tracker.totalDistance;
     final avgSpd = tracker.avgSpeed;
@@ -271,25 +268,31 @@ class _TrackingScreenState extends State<TrackingScreen> {
     final rank = tracker.currentRank;
     final totalRunners = tracker.totalParticipants;
 
-    await tracker.stopTracking();
     _stopwatch.stop();
 
-    // Save race summary locally into SQLite
-    await OfflineStorageService.saveRaceSummary(
-      eventId: widget.eventId,
-      eventName: widget.eventName,
-      elapsedDuration: elapsed,
-      totalDistanceKm: dist,
-      avgSpeedKmh: avgSpd,
-      maxSpeedKmh: maxSpd,
-      elevationGainM: elev,
-      finalRank: rank,
-      totalParticipants: totalRunners,
-    );
+    // 2. Save race summary locally into SQLite if any progress was made
+    if (dist > 0 || elapsed.inSeconds > 0) {
+      await OfflineStorageService.saveRaceSummary(
+        eventId: widget.eventId,
+        eventName: widget.eventName,
+        elapsedDuration: elapsed,
+        totalDistanceKm: dist,
+        avgSpeedKmh: avgSpd,
+        maxSpeedKmh: maxSpd,
+        elevationGainM: elev,
+        finalRank: rank,
+        totalParticipants: totalRunners,
+      );
+    }
+
+    // 3. Stop tracker service AFTER saving summary
+    await tracker.stopTracking();
 
     if (mounted) {
       final nav = Navigator.of(context);
       final eventProv = context.read<EventProvider>();
+      final currentEvent = eventProv.currentEvent;
+
       eventProv.finishParticipant(
         widget.eventId,
         stats: {
@@ -301,22 +304,34 @@ class _TrackingScreenState extends State<TrackingScreen> {
         },
       );
       eventProv.clearCurrentEvent();
-      nav.pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => RaceSummaryScreen(
-            eventId: widget.eventId,
-            eventName: widget.eventName,
-            elapsedDuration: elapsed,
-            totalDistanceKm: dist,
-            avgSpeedKmh: avgSpd,
-            maxSpeedKmh: maxSpd,
-            elevationGainM: elev,
-            finalRank: rank,
-            totalParticipants: totalRunners,
+
+      if (navigateToSummary) {
+        nav.pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => RaceSummaryScreen(
+              eventId: widget.eventId,
+              eventName: widget.eventName,
+              elapsedDuration: elapsed,
+              totalDistanceKm: dist,
+              avgSpeedKmh: avgSpd,
+              maxSpeedKmh: maxSpd,
+              elevationGainM: elev,
+              finalRank: rank,
+              totalParticipants: totalRunners,
+              routeGeojson: currentEvent?.routeGeojson,
+            ),
           ),
-        ),
-      );
+        );
+      } else {
+        nav.pop();
+      }
     }
+  }
+
+  /// Triggers the auto-finish sequence: haptic, stop tracking, save stats, navigate.
+  Future<void> _triggerAutoFinish(TrackingProvider tracker) async {
+    HapticFeedback.heavyImpact();
+    await _saveAndFinishSession(tracker, navigateToSummary: true);
   }
 
   @override
@@ -351,11 +366,8 @@ class _TrackingScreenState extends State<TrackingScreen> {
         if (didPop) return;
         final confirm = await _showExitConfirmation();
         if (confirm && context.mounted) {
-          final nav = Navigator.of(context);
-          final eventProv = context.read<EventProvider>();
-          await context.read<TrackingProvider>().stopTracking();
-          eventProv.clearCurrentEvent();
-          nav.pop(result);
+          final trackerProv = context.read<TrackingProvider>();
+          await _saveAndFinishSession(trackerProv, navigateToSummary: false);
         }
       },
       child: Scaffold(
@@ -506,11 +518,8 @@ class _TrackingScreenState extends State<TrackingScreen> {
           InkWell(
             onTap: () async {
               if (await _showExitConfirmation() && mounted) {
-                final nav = Navigator.of(context);
-                final eventProv = context.read<EventProvider>();
-                await context.read<TrackingProvider>().stopTracking();
-                eventProv.clearCurrentEvent();
-                nav.pop();
+                final trackerProv = context.read<TrackingProvider>();
+                await _saveAndFinishSession(trackerProv, navigateToSummary: false);
               }
             },
             child: Padding(
