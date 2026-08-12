@@ -269,23 +269,23 @@ class _LiveMapWidgetState extends State<LiveMapWidget> {
       _isRouteDrawn = true;
       debugPrint("🛣️ [LiveMapWidget] Route & Start/Finish markers rendered successfully.");
 
-      // Auto zoom-out overview: fit full route shape when map is first drawn
+      // Auto zoom-out overview: fit full route shape centered in the middle when map is first drawn
       if (coords != null && coords.isNotEmpty && !_hasFittedOverview) {
         _hasFittedOverview = true;
         final bounds = _calculateRouteBounds(coords);
         if (bounds != null) {
-          Future.delayed(const Duration(milliseconds: 300), () {
+          Future.delayed(const Duration(milliseconds: 200), () {
             try {
               _mapController?.animateCamera(
                 CameraUpdate.newLatLngBounds(
                   bounds,
-                  top: 120,
-                  bottom: 260,
+                  top: 100,
+                  bottom: 200,
                   left: 40,
                   right: 40,
                 ),
               );
-              debugPrint("🗺️ [LiveMapWidget] Initial full route overview bounds fitted.");
+              debugPrint("🗺️ [LiveMapWidget] Initial full route overview centered and fitted.");
             } catch (e) {
               debugPrint("⚠️ [LiveMapWidget] Route overview fit bounds error: $e");
             }
@@ -323,9 +323,21 @@ class _LiveMapWidgetState extends State<LiveMapWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final initialPos = widget.currentPosition != null
-        ? LatLng(widget.currentPosition!.latitude, widget.currentPosition!.longitude)
-        : const LatLng(-7.8711, 112.5269); // Batu, Malang
+    LatLng initialPos = const LatLng(-7.8711, 112.5269);
+    if (widget.routeGeojson != null) {
+      final coords = _extractCoordinates(_normalizeGeojson(widget.routeGeojson!));
+      if (coords != null && coords.isNotEmpty) {
+        final bounds = _calculateRouteBounds(coords);
+        if (bounds != null) {
+          initialPos = LatLng(
+            (bounds.southwest.latitude + bounds.northeast.latitude) / 2,
+            (bounds.southwest.longitude + bounds.northeast.longitude) / 2,
+          );
+        }
+      }
+    } else if (widget.currentPosition != null) {
+      initialPos = LatLng(widget.currentPosition!.latitude, widget.currentPosition!.longitude);
+    }
 
     // Select style based on current brightness
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -334,7 +346,7 @@ class _LiveMapWidgetState extends State<LiveMapWidget> {
     return MapLibreMap(
       initialCameraPosition: CameraPosition(
         target: initialPos,
-        zoom: 14.5,
+        zoom: 13.0,
         tilt: 0.0,
       ),
       styleString: styleUrl,

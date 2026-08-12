@@ -219,64 +219,6 @@ class _TrackingScreenState extends State<TrackingScreen> {
     return r * c;
   }
 
-  /// Fits the camera to show the full route bounds.
-  void _fitRouteOverview(Event? event) {
-    if (event?.routeGeojson == null || _mapController == null) return;
-    try {
-      final routeGeojson = event!.routeGeojson!;
-      List<dynamic>? coords;
-      if (routeGeojson['type'] == 'FeatureCollection' &&
-          routeGeojson['features'] != null &&
-          (routeGeojson['features'] as List).isNotEmpty) {
-        final feature = routeGeojson['features'][0];
-        if (feature['geometry'] != null && feature['geometry']['coordinates'] != null) {
-          coords = feature['geometry']['coordinates'] as List;
-        }
-      } else if (routeGeojson['type'] == 'Feature' &&
-          routeGeojson['geometry'] != null &&
-          routeGeojson['geometry']['coordinates'] != null) {
-        coords = routeGeojson['geometry']['coordinates'] as List;
-      } else if (routeGeojson['type'] == 'LineString' && routeGeojson['coordinates'] != null) {
-        coords = routeGeojson['coordinates'] as List;
-      }
-
-      if (coords == null || coords.isEmpty) return;
-
-      double minLat = 90.0, maxLat = -90.0;
-      double minLng = 180.0, maxLng = -180.0;
-
-      for (final pt in coords) {
-        if (pt is List && pt.length >= 2) {
-          final lng = (pt[0] as num).toDouble();
-          final lat = (pt[1] as num).toDouble();
-          if (lat < minLat) minLat = lat;
-          if (lat > maxLat) maxLat = lat;
-          if (lng < minLng) minLng = lng;
-          if (lng > maxLng) maxLng = lng;
-        }
-      }
-
-      if (minLat >= maxLat || minLng >= maxLng) return;
-
-      final bounds = LatLngBounds(
-        southwest: LatLng(minLat, minLng),
-        northeast: LatLng(maxLat, maxLng),
-      );
-
-      _mapController?.animateCamera(
-        CameraUpdate.newLatLngBounds(
-          bounds,
-          top: 120,
-          bottom: 260,
-          left: 40,
-          right: 40,
-        ),
-      );
-    } catch (e) {
-      debugPrint("⚠️ [TrackingScreen] Overview fit error: $e");
-    }
-  }
-
   /// Extracts the finish point (last coordinate) from routeGeojson.
   DashlyLatLng? _extractFinishPoint(Map<String, dynamic>? routeGeojson) {
     if (routeGeojson == null) return null;
@@ -458,44 +400,33 @@ class _TrackingScreenState extends State<TrackingScreen> {
               child: _buildDockedBottomPanel(tracker, eventProvider),
             ),
 
-            // 5. MAP CONTROLS - LEFT SIDE (Full Route Overview & Center Pointer 3D)
+            // 5. MAP CONTROLS - LEFT SIDE (Center Pointer 3D)
             Positioned(
               left: 16,
               bottom: _isMetricsPanelCollapsed
                   ? (115 + MediaQuery.of(context).padding.bottom)
                   : ((_getEffectiveAltitudeProfile(eventProvider).isNotEmpty ? 305 : 155) +
                       MediaQuery.of(context).padding.bottom),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _buildMapActionButton(
-                    icon: Icons.map_rounded,
-                    tooltip: "Full Route Overview",
-                    onTap: () => _fitRouteOverview(eventProvider.currentEvent),
-                  ),
-                  const SizedBox(height: 10),
-                  _buildMapActionButton(
-                    icon: Icons.my_location_rounded,
-                    tooltip: "Center Pointer 3D",
-                    onTap: () {
-                      final pos = tracker.currentPosition;
-                      if (pos != null && _mapController != null) {
-                        try {
-                          _mapController?.animateCamera(
-                            CameraUpdate.newCameraPosition(
-                              CameraPosition(
-                                target: LatLng(pos.latitude, pos.longitude),
-                                zoom: 18.0,
-                                tilt: 55.0,
-                                bearing: pos.heading > 0 ? pos.heading : 0.0,
-                              ),
-                            ),
-                          );
-                        } catch (_) {}
-                      }
-                    },
-                  ),
-                ],
+              child: _buildMapActionButton(
+                icon: Icons.my_location_rounded,
+                tooltip: "Center Pointer 3D",
+                onTap: () {
+                  final pos = tracker.currentPosition;
+                  if (pos != null && _mapController != null) {
+                    try {
+                      _mapController?.animateCamera(
+                        CameraUpdate.newCameraPosition(
+                          CameraPosition(
+                            target: LatLng(pos.latitude, pos.longitude),
+                            zoom: 18.0,
+                            tilt: 55.0,
+                            bearing: pos.heading > 0 ? pos.heading : 0.0,
+                          ),
+                        ),
+                      );
+                    } catch (_) {}
+                  }
+                },
               ),
             ),
 
