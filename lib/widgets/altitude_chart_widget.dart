@@ -19,32 +19,8 @@ class AltitudeChartWidget extends StatefulWidget {
 }
 
 class _AltitudeChartWidgetState extends State<AltitudeChartWidget> {
-  double _zoomFactor = 1.0; // 1.0x (full view) up to 4.0x
+  double _zoomFactor = 1.0; // 1.0x (full view) up to 5.0x
   double _baseZoomFactor = 1.0;
-
-  void _zoomIn() {
-    setState(() {
-      if (_zoomFactor < 4.0) {
-        _zoomFactor += 0.75;
-        if (_zoomFactor > 4.0) _zoomFactor = 4.0;
-      }
-    });
-  }
-
-  void _zoomOut() {
-    setState(() {
-      if (_zoomFactor > 1.0) {
-        _zoomFactor -= 0.75;
-        if (_zoomFactor < 1.0) _zoomFactor = 1.0;
-      }
-    });
-  }
-
-  void _resetZoom() {
-    setState(() {
-      _zoomFactor = 1.0;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -150,9 +126,14 @@ class _AltitudeChartWidgetState extends State<AltitudeChartWidget> {
       ),
       child: Stack(
         children: [
-          // Chart View with 2-Finger Pinch-to-Zoom Support
+          // Chart View with Smooth 2-Finger Pinch-to-Zoom & Double-Tap Reset
           Positioned.fill(
             child: GestureDetector(
+              onDoubleTap: () {
+                setState(() {
+                  _zoomFactor = 1.0;
+                });
+              },
               onScaleStart: (details) {
                 _baseZoomFactor = _zoomFactor;
               },
@@ -161,7 +142,7 @@ class _AltitudeChartWidgetState extends State<AltitudeChartWidget> {
                   setState(() {
                     double newZoom = _baseZoomFactor * details.scale;
                     if (newZoom < 1.0) newZoom = 1.0;
-                    if (newZoom > 4.0) newZoom = 4.0;
+                    if (newZoom > 5.0) newZoom = 5.0;
                     _zoomFactor = newZoom;
                   });
                 }
@@ -265,68 +246,30 @@ class _AltitudeChartWidgetState extends State<AltitudeChartWidget> {
             ),
           ),
 
-          // Zoom Controls Overlay (Top Right)
-          Positioned(
-            top: 0,
-            right: 4,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.7),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: context.dashlyColors.divider.withValues(alpha: 0.4)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    '${_zoomFactor.toStringAsFixed(1)}x',
-                    style: TextStyle(
-                      color: context.dashlyColors.accent,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w900,
-                    ),
+          // Dynamic Zoom Scale Badge (Only visible when zoomed in)
+          if (_zoomFactor > 1.0)
+            Positioned(
+              top: 0,
+              right: 4,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.75),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: context.dashlyColors.accent.withValues(alpha: 0.5)),
+                ),
+                child: Text(
+                  '${_zoomFactor.toStringAsFixed(1)}x ZOOM',
+                  style: TextStyle(
+                    color: context.dashlyColors.accent,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.5,
                   ),
-                  const SizedBox(width: 4),
-                  _buildZoomIconButton(
-                    icon: Icons.zoom_in_rounded,
-                    onTap: _zoomIn,
-                    tooltip: "Zoom In",
-                  ),
-                  _buildZoomIconButton(
-                    icon: Icons.zoom_out_rounded,
-                    onTap: _zoomOut,
-                    tooltip: "Zoom Out",
-                  ),
-                  if (_zoomFactor > 1.0)
-                    _buildZoomIconButton(
-                      icon: Icons.refresh_rounded,
-                      onTap: _resetZoom,
-                      tooltip: "Reset Zoom",
-                    ),
-                ],
+                ),
               ),
             ),
-          ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildZoomIconButton({
-    required IconData icon,
-    required VoidCallback onTap,
-    required String tooltip,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 2),
-        child: Icon(
-          icon,
-          color: Colors.white,
-          size: 16,
-        ),
       ),
     );
   }
