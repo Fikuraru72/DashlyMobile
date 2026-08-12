@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 import 'dart:async';
 import 'dart:math';
-import 'dart:ui';
 import 'package:flutter/services.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/tracking_provider.dart';
@@ -420,54 +419,55 @@ class _TrackingScreenState extends State<TrackingScreen> {
         ? " • BIB #${currentEvent.bibNumber}"
         : "";
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(30),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: context.dashlyColors.surface.withValues(alpha: 0.85),
-            borderRadius: BorderRadius.circular(30),
-            border: Border.all(color: context.dashlyColors.divider.withValues(alpha: 0.5)),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: context.dashlyColors.surface.withValues(alpha: 0.95),
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(color: context.dashlyColors.divider.withValues(alpha: 0.5)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
           ),
-          child: Row(
-            children: [
-              // Back Button
-              InkWell(
-                onTap: () async {
-                  if (await _showExitConfirmation() && mounted) {
-                    Navigator.pop(context);
-                  }
-                },
-                child: Padding(
-                  padding: const EdgeInsets.all(4.0),
-                  child: Icon(
-                    Icons.arrow_back_ios_new_rounded,
-                    color: context.dashlyColors.accent,
-                    size: 18,
-                  ),
-                ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Back Button
+          InkWell(
+            onTap: () async {
+              if (await _showExitConfirmation() && mounted) {
+                Navigator.pop(context);
+              }
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(4.0),
+              child: Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: context.dashlyColors.accent,
+                size: 18,
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  "${widget.eventName.toUpperCase()}$bibText",
-                  style: TextStyle(
-                    color: context.dashlyColors.textPrimary,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.8,
-                    fontSize: 12,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(width: 8),
-              _buildConnectionBadge(tracker.isMqttConnected),
-            ],
+            ),
           ),
-        ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              "${widget.eventName.toUpperCase()}$bibText",
+              style: TextStyle(
+                color: context.dashlyColors.textPrimary,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.8,
+                fontSize: 12,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 8),
+          _buildConnectionBadge(tracker.isMqttConnected),
+        ],
       ),
     );
   }
@@ -514,22 +514,25 @@ class _TrackingScreenState extends State<TrackingScreen> {
     required String tooltip,
     required VoidCallback onTap,
   }) {
-    return ClipOval(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-        child: InkWell(
-          onTap: onTap,
-          child: Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: context.dashlyColors.surface.withValues(alpha: 0.85),
-              shape: BoxShape.circle,
-              border: Border.all(color: context.dashlyColors.divider.withValues(alpha: 0.5)),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(22),
+      child: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: context.dashlyColors.surface.withValues(alpha: 0.95),
+          shape: BoxShape.circle,
+          border: Border.all(color: context.dashlyColors.divider.withValues(alpha: 0.5)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
-            child: Icon(icon, color: context.dashlyColors.accent, size: 20),
-          ),
+          ],
         ),
+        child: Icon(icon, color: context.dashlyColors.accent, size: 20),
       ),
     );
   }
