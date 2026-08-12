@@ -8,8 +8,8 @@ import '../../core/utils/geo_utils.dart';
 /// Live Map Widget — MapLibre GL + MapTiler Dark Mode
 /// ════════════════════════════════════════════════════════════════
 /// Shows the user's real-time GPS location on a dark-themed map.
-/// Uses MapLibre's native `myLocationEnabled` for the blue dot,
-/// plus a neon-green circle overlay for visual emphasis.
+/// Uses MapLibre's native `myLocationEnabled` for the location marker.
+/// Includes crash safeguards for Android OpenGL driver stability.
 /// ════════════════════════════════════════════════════════════════
 
 // MapTiler API Key — dataviz-dark style
@@ -40,6 +40,7 @@ class _LiveMapWidgetState extends State<LiveMapWidget> {
   bool _styleLoaded = false;
   bool _isRouteDrawn = false;
   double _currentBearing = 0.0;
+  DashlyLatLng? _lastAnimatedPosition;
 
   double _calculateBearing(double lat1, double lng1, double lat2, double lng2) {
     final dLng = (lng2 - lng1) * (pi / 180.0);
@@ -58,27 +59,41 @@ class _LiveMapWidgetState extends State<LiveMapWidget> {
       _drawRoute();
     }
 
-    if (widget.currentPosition != null) {
-      final pos = widget.currentPosition!;
-      final oldPos = oldWidget.currentPosition;
+    // SAFEGUARD 1: Do not attempt camera animation if map style is not fully loaded or controller is null
+    if (!_styleLoaded || _mapController == null || widget.currentPosition == null) {
+      return;
+    }
 
-      // Determine heading/bearing: prefer position.heading, fallback to movement vector calculation
-      if (pos.heading > 0) {
-        _currentBearing = pos.heading;
-      } else if (oldPos != null) {
-        final dLat = (pos.latitude - oldPos.latitude).abs();
-        final dLng = (pos.longitude - oldPos.longitude).abs();
-        if (dLat > 0.000003 || dLng > 0.000003) {
-          _currentBearing = _calculateBearing(
-            oldPos.latitude,
-            oldPos.longitude,
-            pos.latitude,
-            pos.longitude,
-          );
-        }
+    final pos = widget.currentPosition!;
+    final oldPos = oldWidget.currentPosition;
+
+    // SAFEGUARD 2: Throttling — only animate camera if position moved > 3 meters (~0.00003 deg)
+    if (_lastAnimatedPosition != null) {
+      final dLat = (pos.latitude - _lastAnimatedPosition!.latitude).abs();
+      final dLng = (pos.longitude - _lastAnimatedPosition!.longitude).abs();
+      if (dLat < 0.00003 && dLng < 0.00003) {
+        return;
       }
+    }
 
-      // Smoothly animate camera to center position with calculated 3D bearing angle
+    // Determine heading/bearing: prefer position.heading, fallback to movement vector calculation
+    if (pos.heading > 0) {
+      _currentBearing = pos.heading;
+    } else if (oldPos != null) {
+      final dLat = (pos.latitude - oldPos.latitude).abs();
+      final dLng = (pos.longitude - oldPos.longitude).abs();
+      if (dLat > 0.000003 || dLng > 0.000003) {
+        _currentBearing = _calculateBearing(
+          oldPos.latitude,
+          oldPos.longitude,
+          pos.latitude,
+          pos.longitude,
+        );
+      }
+    }
+
+    // SAFEGUARD 3: Wrap camera animation in try-catch to prevent native C++ engine crashes
+    try {
       _mapController?.animateCamera(
         CameraUpdate.newCameraPosition(
           CameraPosition(
@@ -89,6 +104,9 @@ class _LiveMapWidgetState extends State<LiveMapWidget> {
           ),
         ),
       );
+      _lastAnimatedPosition = pos;
+    } catch (e) {
+      debugPrint("⚠️ [LiveMapWidget] Camera animation error caught safely: $e");
     }
   }
 
@@ -153,9 +171,9 @@ class _LiveMapWidgetState extends State<LiveMapWidget> {
         ),
       );
       _isRouteDrawn = true;
-      print("🛣️ [LiveMapWidget] Route rendered successfully.");
+      debugPrint("🛣️ [LiveMapWidget] Route rendered successfully.");
     } catch (e) {
-      print("⚠️ [LiveMapWidget] Failed to draw route: $e");
+      debugPrint("⚠️ [LiveMapWidget] Failed to draw route: $e");
     }
   }
 
@@ -180,8 +198,8 @@ class _LiveMapWidgetState extends State<LiveMapWidget> {
       onStyleLoadedCallback: _onStyleLoaded,
       trackCameraPosition: true,
       myLocationEnabled: true,
-      myLocationTrackingMode: MyLocationTrackingMode.trackingCompass,
-      myLocationRenderMode: MyLocationRenderMode.compass,
+      myLocationTrackingMode: MyLocationTrackingMode.tracking,
+      myLocationRenderMode: MyLocationRenderMode.normal,
       compassEnabled: false,
       attributionButtonMargins: const Point(-100, -100), // hide off-screen
     );
