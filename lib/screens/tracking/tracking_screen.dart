@@ -385,7 +385,6 @@ class _TrackingScreenState extends State<TrackingScreen> {
                   final pos = tracker.currentPosition;
                   if (pos != null && _mapController != null) {
                     try {
-                      _mapController?.updateMyLocationTrackingMode(MyLocationTrackingMode.trackingCompass);
                       _mapController?.animateCamera(
                         CameraUpdate.newCameraPosition(
                           CameraPosition(
