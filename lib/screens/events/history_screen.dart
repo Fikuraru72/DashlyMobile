@@ -129,7 +129,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.black : context.dashlyColors.textPrimary,
+            color: isSelected ? Colors.white : context.dashlyColors.textPrimary,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             fontSize: 12,
           ),
@@ -286,7 +286,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: context.dashlyColors.accent,
-                  foregroundColor: Colors.black,
+                  foregroundColor: Colors.white,
                   elevation: 0,
                   minimumSize: const Size(double.infinity, 44),
                 ),

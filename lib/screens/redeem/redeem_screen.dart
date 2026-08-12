@@ -187,7 +187,7 @@ class _RedeemScreenState extends State<RedeemScreen> {
                           },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: colors.accent,
-                      foregroundColor: Colors.black,
+                      foregroundColor: Colors.white,
                       disabledBackgroundColor: colors.surfaceLight,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),

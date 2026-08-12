@@ -181,7 +181,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: context.dashlyColors.accent,
-                            foregroundColor: Colors.black,
+                            foregroundColor: Colors.white,
                           ),
                           child: const Text("EXPLORE EVENTS"),
                         ),

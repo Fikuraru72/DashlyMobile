@@ -216,17 +216,17 @@ class _PermissionOnboardingDialogState extends State<PermissionOnboardingDialog>
                   ? const SizedBox(
                       width: 20,
                       height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                     )
                   : const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.check_circle_rounded, color: Colors.black, size: 20),
+                        Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
                         SizedBox(width: 8),
                         Text(
                           "ALLOW PERMISSIONS",
                           style: TextStyle(
-                            color: Colors.black,
+                            color: Colors.white,
                             fontWeight: FontWeight.w900,
                             letterSpacing: 1.2,
                             fontSize: 14,

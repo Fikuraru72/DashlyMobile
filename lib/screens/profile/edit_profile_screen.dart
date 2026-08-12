@@ -309,10 +309,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     onPressed: auth.isLoading ? null : _handleSave,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: context.dashlyColors.accent,
-                      foregroundColor: Colors.black,
+                      foregroundColor: Colors.white,
                     ),
                     child: auth.isLoading
-                        ? const CircularProgressIndicator(color: Colors.black)
+                        ? const CircularProgressIndicator(color: Colors.white)
                         : const Text('SAVE CHANGES', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5)),
                   ),
                 ),

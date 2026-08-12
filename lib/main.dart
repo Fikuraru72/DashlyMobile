@@ -5,7 +5,6 @@ import 'providers/auth_provider.dart';
 import 'providers/dashboard_provider.dart';
 import 'theme/dashly_theme.dart';
 import 'screens/auth/splash_screen.dart';
-import 'screens/events/explore_screen.dart';
 import 'screens/main_navigation.dart';
 import 'providers/event_provider.dart';
 import 'providers/event_list_provider.dart';

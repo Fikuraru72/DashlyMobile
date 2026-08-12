@@ -414,7 +414,7 @@ class _RaceInterlockScreenState extends State<RaceInterlockScreen>
                         ? context.dashlyColors.accent
                         : context.dashlyColors.surface,
                     disabledBackgroundColor: context.dashlyColors.surface,
-                    foregroundColor: canStart ? Colors.black : context.dashlyColors.textHint,
+                    foregroundColor: canStart ? Colors.white : context.dashlyColors.textHint,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -422,7 +422,7 @@ class _RaceInterlockScreenState extends State<RaceInterlockScreen>
                     shadowColor: canStart ? context.dashlyColors.accent.withOpacity(0.4) : Colors.transparent,
                   ),
                   child: _isProcessing 
-                    ? const CircularProgressIndicator(color: Colors.black)
+                    ? const CircularProgressIndicator(color: Colors.white)
                     : Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [

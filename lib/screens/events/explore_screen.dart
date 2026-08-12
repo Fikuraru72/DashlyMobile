@@ -292,7 +292,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openQRScannerSheet(context),
         backgroundColor: context.dashlyColors.accent,
-        foregroundColor: Colors.black,
+        foregroundColor: Colors.white,
         elevation: 6,
         icon: const Icon(Icons.qr_code_scanner_rounded, size: 22),
         label: const Text("SCAN QR CODE", style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2, fontSize: 13)),
@@ -424,7 +424,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected ? Colors.black : context.dashlyColors.textPrimary,
+            color: isSelected ? Colors.white : context.dashlyColors.textPrimary,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             fontSize: 12,
           ),

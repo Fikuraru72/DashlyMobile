@@ -95,10 +95,10 @@ class EventDetailScreen extends StatelessWidget {
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: context.dashlyColors.accent,
-                    foregroundColor: Colors.black,
+                    foregroundColor: Colors.white,
                   ),
                   child: isLoading 
-                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2))
+                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                     : const Text("JOIN", style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ],
@@ -153,7 +153,7 @@ class EventDetailScreen extends StatelessWidget {
               onPressed: () => Navigator.pop(ctx),
               style: ElevatedButton.styleFrom(
                 backgroundColor: ctx.dashlyColors.accent,
-                foregroundColor: Colors.black,
+                foregroundColor: Colors.white,
               ),
               child: const Text("GOT IT", style: TextStyle(fontWeight: FontWeight.bold)),
             ),
@@ -398,7 +398,7 @@ class EventDetailScreen extends StatelessWidget {
         onPressed: () => _showJoinDialog(context),
         style: ElevatedButton.styleFrom(
           backgroundColor: context.dashlyColors.accent,
-          foregroundColor: Colors.black,
+          foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         ),
         child: const Text("JOIN EVENT", style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5, fontSize: 16)),
@@ -412,7 +412,7 @@ class EventDetailScreen extends StatelessWidget {
       },
       style: ElevatedButton.styleFrom(
         backgroundColor: context.dashlyColors.accent,
-        foregroundColor: Colors.black,
+        foregroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
       child: const Text("ENTER RACE", style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.5, fontSize: 16)),

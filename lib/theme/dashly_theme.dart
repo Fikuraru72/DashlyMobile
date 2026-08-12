@@ -142,9 +142,9 @@ class DashlyTheme {
       colorScheme: ColorScheme(
         brightness: brightness,
         primary: ext.accent,
-        onPrimary: Colors.black,
+        onPrimary: Colors.white,
         secondary: ext.accentDim,
-        onSecondary: Colors.black,
+        onSecondary: Colors.white,
         error: ext.error,
         onError: Colors.white,
         surface: ext.surface,
@@ -164,7 +164,7 @@ class DashlyTheme {
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: ext.accent,
-          foregroundColor: const Color(0xFF000000),
+          foregroundColor: const Color(0xFFFFFFFF),
           minimumSize: const Size(double.infinity, 52),
           shape: RoundedRectangleBorder(borderRadius: radiusMd),
           textStyle: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: 0.5),
