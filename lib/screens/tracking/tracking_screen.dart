@@ -430,7 +430,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
               ),
             ),
 
-            // 6. MAP CONTROLS - RIGHT SIDE (Zoom In & Zoom Out)
+            // 6. MAP CONTROLS - RIGHT SIDE (Zoom In, Zoom Out, Expand/Compact Toggle)
             Positioned(
               right: 16,
               bottom: _isMetricsPanelCollapsed
@@ -452,6 +452,18 @@ class _TrackingScreenState extends State<TrackingScreen> {
                     tooltip: "Zoom Out",
                     onTap: () {
                       _mapController?.animateCamera(CameraUpdate.zoomOut());
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  _buildMapActionButton(
+                    icon: _isMetricsPanelCollapsed
+                        ? Icons.keyboard_arrow_up_rounded
+                        : Icons.keyboard_arrow_down_rounded,
+                    tooltip: _isMetricsPanelCollapsed ? "Expand Chart" : "Compact Chart",
+                    onTap: () {
+                      setState(() {
+                        _isMetricsPanelCollapsed = !_isMetricsPanelCollapsed;
+                      });
                     },
                   ),
                 ],
@@ -523,7 +535,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
 
   Widget _buildToDestinationBadge(double remainingKm) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
         color: context.dashlyColors.surface.withValues(alpha: 0.95),
         borderRadius: BorderRadius.circular(20),
@@ -536,22 +548,38 @@ class _TrackingScreenState extends State<TrackingScreen> {
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.flag_rounded,
-            color: context.dashlyColors.accent,
-            size: 14,
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.flag_rounded,
+                color: context.dashlyColors.accent,
+                size: 13,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                "TO DESTINATION",
+                style: TextStyle(
+                  color: context.dashlyColors.textHint,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.0,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 6),
+          const SizedBox(height: 2),
           Text(
-            "${remainingKm.toStringAsFixed(2)} KM TO DESTINATION",
+            "${remainingKm.toStringAsFixed(2)} KM",
             style: TextStyle(
               color: context.dashlyColors.textPrimary,
-              fontSize: 10,
+              fontSize: 18,
               fontWeight: FontWeight.w900,
-              letterSpacing: 0.6,
+              letterSpacing: 0.5,
             ),
           ),
         ],
@@ -726,7 +754,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Header Row with Compact Toggle Button
+          // Header Row
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -737,42 +765,6 @@ class _TrackingScreenState extends State<TrackingScreen> {
                   fontSize: 10,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 1.5,
-                ),
-              ),
-              InkWell(
-                onTap: () {
-                  setState(() {
-                    _isMetricsPanelCollapsed = !_isMetricsPanelCollapsed;
-                  });
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: context.dashlyColors.divider.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        _isMetricsPanelCollapsed
-                            ? Icons.keyboard_arrow_up_rounded
-                            : Icons.keyboard_arrow_down_rounded,
-                        color: context.dashlyColors.textPrimary,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        _isMetricsPanelCollapsed ? "EXPAND" : "COMPACT",
-                        style: TextStyle(
-                          color: context.dashlyColors.textPrimary,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
               ),
             ],

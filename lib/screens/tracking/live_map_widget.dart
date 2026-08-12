@@ -139,6 +139,26 @@ class _LiveMapWidgetState extends State<LiveMapWidget> {
     return geojson;
   }
 
+  List<dynamic>? _extractCoordinates(Map<String, dynamic> geojson) {
+    try {
+      if (geojson['type'] == 'FeatureCollection' &&
+          geojson['features'] != null &&
+          (geojson['features'] as List).isNotEmpty) {
+        final feature = geojson['features'][0];
+        if (feature['geometry'] != null && feature['geometry']['coordinates'] != null) {
+          return feature['geometry']['coordinates'] as List;
+        }
+      } else if (geojson['type'] == 'Feature' &&
+          geojson['geometry'] != null &&
+          geojson['geometry']['coordinates'] != null) {
+        return geojson['geometry']['coordinates'] as List;
+      } else if (geojson['type'] == 'LineString' && geojson['coordinates'] != null) {
+        return geojson['coordinates'] as List;
+      }
+    } catch (_) {}
+    return null;
+  }
+
   Future<void> _drawRoute() async {
     if (_mapController == null || widget.routeGeojson == null || !_styleLoaded) return;
 
@@ -147,6 +167,10 @@ class _LiveMapWidgetState extends State<LiveMapWidget> {
 
       // Remove previous layer & source if re-drawing
       try {
+        await _mapController?.removeLayer("start-point-layer");
+        await _mapController?.removeSource("start-point");
+        await _mapController?.removeLayer("finish-point-layer");
+        await _mapController?.removeSource("finish-point");
         await _mapController?.removeLayer("route-main-layer");
         await _mapController?.removeSource("route-main");
       } catch (_) {}
@@ -169,8 +193,68 @@ class _LiveMapWidgetState extends State<LiveMapWidget> {
           lineJoin: 'round',
         ),
       );
+
+      // Extract Start & Finish coordinates and render markers
+      final coords = _extractCoordinates(normalizedGeojson);
+      if (coords != null && coords.length >= 2) {
+        final startPt = coords.first as List;
+        final finishPt = coords.last as List;
+
+        final startGeojson = {
+          'type': 'FeatureCollection',
+          'features': [
+            {
+              'type': 'Feature',
+              'properties': {'title': 'START'},
+              'geometry': {'type': 'Point', 'coordinates': [startPt[0], startPt[1]]}
+            }
+          ]
+        };
+
+        final finishGeojson = {
+          'type': 'FeatureCollection',
+          'features': [
+            {
+              'type': 'Feature',
+              'properties': {'title': 'FINISH'},
+              'geometry': {'type': 'Point', 'coordinates': [finishPt[0], finishPt[1]]}
+            }
+          ]
+        };
+
+        await _mapController?.addSource(
+          "start-point",
+          GeojsonSourceProperties(data: startGeojson),
+        );
+        await _mapController?.addCircleLayer(
+          "start-point",
+          "start-point-layer",
+          const CircleLayerProperties(
+            circleColor: '#22c55e',
+            circleRadius: 8.0,
+            circleStrokeWidth: 3.0,
+            circleStrokeColor: '#ffffff',
+          ),
+        );
+
+        await _mapController?.addSource(
+          "finish-point",
+          GeojsonSourceProperties(data: finishGeojson),
+        );
+        await _mapController?.addCircleLayer(
+          "finish-point",
+          "finish-point-layer",
+          const CircleLayerProperties(
+            circleColor: '#ef4444',
+            circleRadius: 8.0,
+            circleStrokeWidth: 3.0,
+            circleStrokeColor: '#ffffff',
+          ),
+        );
+      }
+
       _isRouteDrawn = true;
-      debugPrint("🛣️ [LiveMapWidget] Route rendered successfully.");
+      debugPrint("🛣️ [LiveMapWidget] Route & Start/Finish markers rendered successfully.");
     } catch (e) {
       debugPrint("⚠️ [LiveMapWidget] Failed to draw route: $e");
     }
