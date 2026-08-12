@@ -130,8 +130,8 @@ class _LiveMapWidgetState extends State<LiveMapWidget> {
     return MapLibreMap(
       initialCameraPosition: CameraPosition(
         target: initialPos,
-        zoom: 18.0,
-        tilt: 55.0,
+        zoom: 14.5,
+        tilt: 0.0,
       ),
       styleString: styleUrl,
       onMapCreated: _onMapCreated,
@@ -141,7 +141,7 @@ class _LiveMapWidgetState extends State<LiveMapWidget> {
       myLocationTrackingMode: MyLocationTrackingMode.tracking,
       myLocationRenderMode: MyLocationRenderMode.normal,
       compassEnabled: false,
-      attributionButtonMargins: const Point(-10, -10),
+      attributionButtonMargins: Point(-10, -10),
     );
   }
 }

@@ -371,15 +371,33 @@ class _TrackingScreenState extends State<TrackingScreen> {
               child: _buildDockedBottomPanel(tracker, eventProvider),
             ),
 
-            // 5. MAP CONTROLS - LEFT SIDE (Reset North & Center Pointer)
+            // 5. MAP CONTROLS - LEFT SIDE (Center Pointer 3D)
             Positioned(
               left: 16,
-              bottom: (_isMetricsPanelCollapsed ? 75 : 245) + MediaQuery.of(context).padding.bottom + 10,
+              bottom: _isMetricsPanelCollapsed
+                  ? (115 + MediaQuery.of(context).padding.bottom)
+                  : ((_getEffectiveAltitudeProfile(eventProvider).isNotEmpty ? 305 : 155) +
+                      MediaQuery.of(context).padding.bottom),
               child: _buildMapActionButton(
                 icon: Icons.my_location_rounded,
-                tooltip: "Center Pointer",
+                tooltip: "Center Pointer 3D",
                 onTap: () {
-                  _mapController?.updateMyLocationTrackingMode(MyLocationTrackingMode.tracking);
+                  final pos = tracker.currentPosition;
+                  if (pos != null && _mapController != null) {
+                    try {
+                      _mapController?.updateMyLocationTrackingMode(MyLocationTrackingMode.trackingCompass);
+                      _mapController?.animateCamera(
+                        CameraUpdate.newCameraPosition(
+                          CameraPosition(
+                            target: LatLng(pos.latitude, pos.longitude),
+                            zoom: 18.0,
+                            tilt: 55.0,
+                            bearing: pos.heading > 0 ? pos.heading : 0.0,
+                          ),
+                        ),
+                      );
+                    } catch (_) {}
+                  }
                 },
               ),
             ),
@@ -387,7 +405,10 @@ class _TrackingScreenState extends State<TrackingScreen> {
             // 6. MAP CONTROLS - RIGHT SIDE (Zoom In & Zoom Out)
             Positioned(
               right: 16,
-              bottom: (_isMetricsPanelCollapsed ? 75 : 245) + MediaQuery.of(context).padding.bottom + 10,
+              bottom: _isMetricsPanelCollapsed
+                  ? (115 + MediaQuery.of(context).padding.bottom)
+                  : ((_getEffectiveAltitudeProfile(eventProvider).isNotEmpty ? 305 : 155) +
+                      MediaQuery.of(context).padding.bottom),
               child: Column(
                 children: [
                   _buildMapActionButton(
@@ -597,6 +618,21 @@ class _TrackingScreenState extends State<TrackingScreen> {
 
   Widget _buildDockedBottomPanel(TrackingProvider tracker, EventProvider eventProvider) {
     final altitudeProfile = _getEffectiveAltitudeProfile(eventProvider);
+    final currentEvent = eventProvider.currentEvent;
+
+    double totalRouteKm = 0.0;
+    if (currentEvent?.totalDistanceMeters != null && currentEvent!.totalDistanceMeters! > 0) {
+      totalRouteKm = currentEvent.totalDistanceMeters! / 1000.0;
+    } else if (altitudeProfile.isNotEmpty) {
+      final lastPt = altitudeProfile.last;
+      if (lastPt is Map && lastPt['distance'] != null) {
+        totalRouteKm = (lastPt['distance'] as num).toDouble() / 1000.0;
+      }
+    }
+
+    final double remainingKm = totalRouteKm > tracker.totalDistance
+        ? (totalRouteKm - tracker.totalDistance)
+        : 0.0;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
@@ -678,13 +714,15 @@ class _TrackingScreenState extends State<TrackingScreen> {
 
           const SizedBox(height: 10),
 
-          // 3 HERO METRICS ROW: DURATION | DISTANCE | ELEVATION GAIN
+          // 4 HERO METRICS ROW: DURATION | DISTANCE | REMAINING | ELEV GAIN
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _buildHeroMetricItem("DURATION", _formatDuration(_stopwatch.elapsed), ""),
               _buildHeroMetricDivider(),
               _buildHeroMetricItem("DISTANCE", tracker.totalDistance.toStringAsFixed(2), "KM"),
+              _buildHeroMetricDivider(),
+              _buildHeroMetricItem("REMAINING", remainingKm.toStringAsFixed(2), "KM"),
               _buildHeroMetricDivider(),
               _buildHeroMetricItem("ELEV GAIN", tracker.elevationGain.toStringAsFixed(0), "M"),
             ],
