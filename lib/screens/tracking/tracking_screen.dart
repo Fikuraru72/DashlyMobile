@@ -9,7 +9,7 @@ import '../../providers/tracking_provider.dart';
 import '../../providers/event_provider.dart';
 import '../../theme/dashly_theme.dart';
 import 'live_map_widget.dart';
-// import '../../widgets/altitude_chart_widget.dart';
+import '../../widgets/altitude_chart_widget.dart';
 import 'race_summary_screen.dart';
 import '../../services/offline_storage_service.dart';
 import '../../core/utils/geo_utils.dart';
@@ -597,7 +597,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
   }
 
   Widget _buildDockedBottomPanel(TrackingProvider tracker, EventProvider eventProvider) {
-    // final altitudeProfile = _getEffectiveAltitudeProfile(eventProvider);
+    final altitudeProfile = _getEffectiveAltitudeProfile(eventProvider);
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
@@ -692,16 +692,22 @@ class _TrackingScreenState extends State<TrackingScreen> {
           ),
 
           if (!_isMetricsPanelCollapsed) ...[
-            // ALTITUDE PROFILE CHART (TEMPORARILY HIDDEN AS REQUESTED)
-            /*
             const SizedBox(height: 12),
             if (altitudeProfile.isNotEmpty)
               AltitudeChartWidget(
                 altitudeProfile: altitudeProfile,
                 currentDistanceMeters: tracker.totalDistance * 1000,
                 otherRunners: tracker.otherRunners,
+              )
+            else
+              Container(
+                height: 50,
+                alignment: Alignment.center,
+                child: Text(
+                  "No Altitude Profile Available",
+                  style: TextStyle(color: context.dashlyColors.textHint, fontSize: 11),
+                ),
               ),
-            */
           ],
         ],
       ),

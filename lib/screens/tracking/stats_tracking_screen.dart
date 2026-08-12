@@ -7,7 +7,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/tracking_provider.dart';
 import '../../providers/event_provider.dart';
 import '../../theme/dashly_theme.dart';
-// import '../../widgets/altitude_chart_widget.dart';
+import '../../widgets/altitude_chart_widget.dart';
 import 'race_summary_screen.dart';
 import '../../services/offline_storage_service.dart';
 import '../../core/utils/geo_utils.dart';
@@ -324,7 +324,7 @@ class _StatsTrackingScreenState extends State<StatsTrackingScreen> {
     final double avgSpeed = tracker.avgSpeed > 0
         ? tracker.avgSpeed
         : (elapsedHours > 0 ? (tracker.totalDistance / elapsedHours) : 0.0);
-    // final altitudeProfile = _getEffectiveAltitudeProfile(eventProvider);
+    final altitudeProfile = _getEffectiveAltitudeProfile(eventProvider);
 
     return PopScope(
       canPop: false,
@@ -358,8 +358,7 @@ class _StatsTrackingScreenState extends State<StatsTrackingScreen> {
                 _buildHeroSpeedCard(tracker, avgSpeed),
                 const SizedBox(height: 16),
 
-                // Altitude Chart (TEMPORARILY HIDDEN AS REQUESTED)
-                /*
+                // Altitude Chart directly below Telemetry Metrics
                 Expanded(
                   child: Container(
                     padding: const EdgeInsets.all(14),
@@ -399,8 +398,6 @@ class _StatsTrackingScreenState extends State<StatsTrackingScreen> {
                     ),
                   ),
                 ),
-                */
-                const Spacer(),
                 const SizedBox(height: 12),
 
                 // Bottom Action Controls (Start Race when inactive)
