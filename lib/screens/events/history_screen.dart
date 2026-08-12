@@ -308,24 +308,25 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     final summary = await OfflineStorageService.getRaceSummary(event.id);
                     if (!context.mounted) return;
 
-                    final Duration elapsed = event.durationSeconds != null
-                        ? Duration(seconds: event.durationSeconds!)
-                        : (summary != null
-                            ? Duration(seconds: summary['elapsedDurationSeconds'] as int)
-                            : Duration.zero);
+                    final Duration elapsed = (summary != null && summary['elapsedDurationSeconds'] != null)
+                        ? Duration(seconds: summary['elapsedDurationSeconds'] as int)
+                        : (event.durationSeconds != null ? Duration(seconds: event.durationSeconds!) : Duration.zero);
 
-                    final double dist = summary != null
+                    final double dist = (summary != null && summary['totalDistanceKm'] != null)
                         ? (summary['totalDistanceKm'] as num).toDouble()
                         : ((event.totalDistanceMeters ?? 0) / 1000.0);
 
-                    final double avgSpd = event.avgSpeedKmh ??
-                        (summary != null ? (summary['avgSpeedKmh'] as num).toDouble() : 0.0);
+                    final double avgSpd = (summary != null && summary['avgSpeedKmh'] != null)
+                        ? (summary['avgSpeedKmh'] as num).toDouble()
+                        : (event.avgSpeedKmh ?? 0.0);
 
-                    final double maxSpd = event.maxSpeedKmh ??
-                        (summary != null ? (summary['maxSpeedKmh'] as num).toDouble() : 0.0);
+                    final double maxSpd = (summary != null && summary['maxSpeedKmh'] != null)
+                        ? (summary['maxSpeedKmh'] as num).toDouble()
+                        : (event.maxSpeedKmh ?? 0.0);
 
-                    final double elev = event.elevationGainMeters?.toDouble() ??
-                        (summary != null ? (summary['elevationGainM'] as num).toDouble() : ((event.totalElevationMeters ?? 0).toDouble()));
+                    final double elev = (summary != null && summary['elevationGainM'] != null)
+                        ? (summary['elevationGainM'] as num).toDouble()
+                        : (event.elevationGainMeters?.toDouble() ?? ((event.totalElevationMeters ?? 0).toDouble()));
 
                     final int rank = summary != null ? (summary['finalRank'] as int? ?? 0) : 0;
                     final int totalRunners = summary != null ? (summary['totalParticipants'] as int? ?? 0) : 0;

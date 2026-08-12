@@ -80,7 +80,11 @@ class TrackingProvider extends ChangeNotifier {
       _category = category;
       _movingSeconds = 0;
       _avgSpeed = 0.0;
+      _maxSpeed = 0.0;
       _lastMovementTimestamp = null;
+      _lastGpsPosition = null;
+      _lastAltitude = -9999.0;
+      _currentPosition = null;
 
       // Load persistent distance from SharedPreferences if available
       final prefs = await SharedPreferences.getInstance();
@@ -206,6 +210,7 @@ class TrackingProvider extends ChangeNotifier {
     _lastAltitude = -9999.0;
     _movingSeconds = 0;
     _avgSpeed = 0.0;
+    _maxSpeed = 0.0;
     _lastMovementTimestamp = null;
     
     // Clear persistent distance state when race is officially stopped

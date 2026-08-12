@@ -60,9 +60,24 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
   }
 
   void _extractRoutePoints() {
-    if (widget.routeGeojson != null) {
+    Map<String, dynamic>? geojson = widget.routeGeojson;
+    if (geojson == null && mounted) {
+      final eventProv = context.read<EventProvider>();
+      final cached = eventProv.getCachedEvent(widget.eventId);
+      if (cached?.routeGeojson != null) {
+        geojson = cached!.routeGeojson;
+      } else {
+        try {
+          final myEv = eventProv.myEvents.firstWhere((e) => e.id == widget.eventId);
+          if (myEv.routeGeojson != null) {
+            geojson = myEv.routeGeojson;
+          }
+        } catch (_) {}
+      }
+    }
+
+    if (geojson != null) {
       try {
-        final geojson = widget.routeGeojson!;
         List<dynamic> rawCoords = [];
 
         if (geojson['type'] == 'LineString' && geojson['coordinates'] is List) {

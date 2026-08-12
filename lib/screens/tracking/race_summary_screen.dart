@@ -48,7 +48,9 @@ class RaceSummaryScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final eventProvider = context.watch<EventProvider>();
-    final currentEvent = eventProvider.currentEvent;
+    final currentEvent = (eventProvider.currentEvent?.id == eventId)
+        ? eventProvider.currentEvent
+        : eventProvider.getCachedEvent(eventId);
 
     final String bibText = (currentEvent != null && currentEvent.bibNumber != null)
         ? " • BIB #${currentEvent.bibNumber}"
