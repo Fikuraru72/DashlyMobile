@@ -8,8 +8,8 @@ import '../../core/utils/geo_utils.dart';
 /// Live Map Widget — MapLibre GL + MapTiler Dark Mode
 /// ════════════════════════════════════════════════════════════════
 /// Shows the user's real-time GPS location on a dark-themed map.
-/// Uses MapLibre's native `myLocationEnabled` for the blue dot,
-/// plus a neon-green circle overlay for visual emphasis.
+/// Continuously tracks participant movement while dynamically preserving
+/// user-selected zoom levels (zoom in/out freely without forcing zoom 18.0).
 /// ════════════════════════════════════════════════════════════════
 
 // MapTiler API Key — dataviz-dark style
@@ -40,6 +40,7 @@ class _LiveMapWidgetState extends State<LiveMapWidget> {
   bool _styleLoaded = false;
   bool _isRouteDrawn = false;
   double _currentBearing = 0.0;
+  double _userZoomLevel = 18.0;
 
   double _calculateBearing(double lat1, double lng1, double lat2, double lng2) {
     final dLng = (lng2 - lng1) * (pi / 180.0);
@@ -78,12 +79,18 @@ class _LiveMapWidgetState extends State<LiveMapWidget> {
         }
       }
 
-      // Smoothly animate camera to center position with calculated 3D bearing angle
+      // Read user's current zoom level dynamically from cameraPosition, preserving user zoom scale
+      if (_mapController?.cameraPosition?.zoom != null) {
+        _userZoomLevel = _mapController!.cameraPosition!.zoom;
+      }
+      final double activeZoom = _mapController?.cameraPosition?.zoom ?? _userZoomLevel;
+
+      // Smoothly animate camera to center position with preserved zoom scale and calculated bearing angle
       _mapController?.animateCamera(
         CameraUpdate.newCameraPosition(
           CameraPosition(
             target: LatLng(pos.latitude, pos.longitude),
-            zoom: 18.0,
+            zoom: activeZoom,
             tilt: 55.0,
             bearing: _currentBearing,
           ),
