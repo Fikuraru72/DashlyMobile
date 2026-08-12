@@ -249,7 +249,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                         final double dist = (summary != null && summary['totalDistanceKm'] != null)
                             ? (summary['totalDistanceKm'] as num).toDouble()
-                            : ((event.totalDistanceMeters ?? 0) / 1000.0);
+                            : 0.0;
 
                         final double avgSpd = (summary != null && summary['avgSpeedKmh'] != null)
                             ? (summary['avgSpeedKmh'] as num).toDouble()
@@ -261,7 +261,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                         final double elev = (summary != null && summary['elevationGainM'] != null)
                             ? (summary['elevationGainM'] as num).toDouble()
-                            : (event.elevationGainMeters?.toDouble() ?? ((event.totalElevationMeters ?? 0).toDouble()));
+                            : (event.elevationGainMeters?.toDouble() ?? 0.0);
 
                         final int rank = summary != null ? (summary['finalRank'] as int? ?? 0) : 0;
                         final int totalRunners = summary != null ? (summary['totalParticipants'] as int? ?? 0) : 0;
