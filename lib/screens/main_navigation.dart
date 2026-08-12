@@ -11,7 +11,7 @@ import '../services/location_service.dart';
 
 class MainNavigation extends StatefulWidget {
   /// Feature Flag: Toggle to enable/disable Explore page tab
-  static const bool isExploreEnabled = true;
+  static const bool isExploreEnabled = false;
 
   const MainNavigation({super.key});
 
