@@ -39,6 +39,7 @@ class _LiveMapWidgetState extends State<LiveMapWidget> {
   MapLibreMapController? _mapController;
   bool _styleLoaded = false;
   bool _isRouteDrawn = false;
+  DashlyLatLng? _lastAnimatedPosition;
 
   @override
   void didUpdateWidget(LiveMapWidget oldWidget) {
@@ -47,6 +48,27 @@ class _LiveMapWidgetState extends State<LiveMapWidget> {
     // Only update map route if GeoJSON has changed
     if (oldWidget.routeGeojson != widget.routeGeojson || !_isRouteDrawn) {
       _drawRoute();
+    }
+
+    // Smoothly center camera target on participant pointer (> 3m movement)
+    if (_styleLoaded && _mapController != null && widget.currentPosition != null) {
+      final pos = widget.currentPosition!;
+      if (_lastAnimatedPosition != null) {
+        final dLat = (pos.latitude - _lastAnimatedPosition!.latitude).abs();
+        final dLng = (pos.longitude - _lastAnimatedPosition!.longitude).abs();
+        if (dLat < 0.00003 && dLng < 0.00003) return;
+      }
+
+      _lastAnimatedPosition = pos;
+      try {
+        _mapController?.animateCamera(
+          CameraUpdate.newLatLng(
+            LatLng(pos.latitude, pos.longitude),
+          ),
+        );
+      } catch (e) {
+        debugPrint("⚠️ [LiveMapWidget] Safe position follow error: $e");
+      }
     }
   }
 
