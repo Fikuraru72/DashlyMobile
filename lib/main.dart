@@ -55,7 +55,7 @@ class DashlyApp extends StatelessWidget {
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
           return MaterialApp(
-            title: 'Eco Race Maps',
+            title: 'EcoRaceMaps',
             debugShowCheckedModeBanner: false,
             scaffoldMessengerKey: rootScaffoldMessengerKey,
             theme: DashlyTheme.lightTheme,

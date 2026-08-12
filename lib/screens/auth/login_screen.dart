@@ -127,7 +127,7 @@ class _LoginScreenState extends State<LoginScreen>
                       ),
                       const SizedBox(height: 24),
                       Text(
-                        'ECO RACE MAPS',
+                        'EcoRaceMaps',
                         style: Theme.of(context).textTheme.headlineMedium
                             ?.copyWith(
                               fontWeight: FontWeight.w900,
