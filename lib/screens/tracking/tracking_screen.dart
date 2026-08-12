@@ -34,8 +34,6 @@ class _TrackingScreenState extends State<TrackingScreen> {
   late Stopwatch _stopwatch;
   late Timer _timer;
   MapLibreMapController? _mapController;
-  final PageController _pageController = PageController();
-  int _currentPage = 0;
   bool _isSosLongPressing = false;
   double _sosProgress = 0.0;
   Timer? _sosTimer;
@@ -73,7 +71,6 @@ class _TrackingScreenState extends State<TrackingScreen> {
     _timer.cancel();
     _stopwatch.stop();
     _sosTimer?.cancel();
-    _pageController.dispose();
     super.dispose();
   }
 
@@ -342,7 +339,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
               ),
             ),
 
-            // 2. TOP HEADER (Translucent Pill with Event Name & BIB Number shown ONCE)
+            // 2. TOP HEADER (Translucent Pill with Back Button & Event Name)
             Positioned(
               top: MediaQuery.of(context).padding.top + 10,
               left: 16,
@@ -350,7 +347,15 @@ class _TrackingScreenState extends State<TrackingScreen> {
               child: _buildHeaderPill(tracker, currentEvent),
             ),
 
-            // 3. DOCKED BOTTOM PANEL (STATISTIK - MENEMPEL DI BAWAH)
+            // 3. FLOATING CIRCULAR SOS BUTTON (Top Right below Header Pill)
+            if (tracker.isTracking)
+              Positioned(
+                top: MediaQuery.of(context).padding.top + 65,
+                right: 16,
+                child: _buildFloatingSosButton(tracker),
+              ),
+
+            // 4. DOCKED BOTTOM PANEL (STATISTIK - MENEMPEL DI BAWAH)
             Positioned(
               left: 0,
               right: 0,
@@ -358,11 +363,10 @@ class _TrackingScreenState extends State<TrackingScreen> {
               child: _buildDockedBottomPanel(tracker, currentEvent),
             ),
 
-            // 4. MAP CONTROLS - LEFT SIDE (Reset North & Center Pointer)
-            // Rendered AFTER bottom panel so they appear ON TOP (higher z-order)
+            // 5. MAP CONTROLS - LEFT SIDE (Reset North & Center Pointer)
             Positioned(
               left: 16,
-              bottom: (_isMetricsPanelCollapsed ? 195 : 320) + MediaQuery.of(context).padding.bottom + 10,
+              bottom: (_isMetricsPanelCollapsed ? 75 : 245) + MediaQuery.of(context).padding.bottom + 10,
               child: _buildMapActionButton(
                 icon: Icons.my_location_rounded,
                 tooltip: "Center Pointer",
@@ -372,10 +376,10 @@ class _TrackingScreenState extends State<TrackingScreen> {
               ),
             ),
 
-            // 5. MAP CONTROLS - RIGHT SIDE (Zoom In & Zoom Out)
+            // 6. MAP CONTROLS - RIGHT SIDE (Zoom In & Zoom Out)
             Positioned(
               right: 16,
-              bottom: (_isMetricsPanelCollapsed ? 195 : 320) + MediaQuery.of(context).padding.bottom + 10,
+              bottom: (_isMetricsPanelCollapsed ? 75 : 245) + MediaQuery.of(context).padding.bottom + 10,
               child: Column(
                 children: [
                   _buildMapActionButton(
@@ -412,7 +416,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
             color: context.dashlyColors.surface.withValues(alpha: 0.85),
             borderRadius: BorderRadius.circular(30),
@@ -420,11 +424,28 @@ class _TrackingScreenState extends State<TrackingScreen> {
           ),
           child: Row(
             children: [
+              // Back Button
+              InkWell(
+                onTap: () async {
+                  if (await _showExitConfirmation() && mounted) {
+                    Navigator.pop(context);
+                  }
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(4.0),
+                  child: Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    color: context.dashlyColors.accent,
+                    size: 18,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   "${widget.eventName.toUpperCase()}$bibText",
                   style: TextStyle(
-                    color: context.dashlyColors.accent,
+                    color: context.dashlyColors.textPrimary,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 0.8,
                     fontSize: 12,
@@ -504,7 +525,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
     );
   }
 
-  Widget _buildSosButton(TrackingProvider tracker) {
+  Widget _buildFloatingSosButton(TrackingProvider tracker) {
     return GestureDetector(
       onLongPressStart: (_) => _startSosHold(tracker),
       onLongPressEnd: (_) => _cancelSosHold(),
@@ -513,33 +534,34 @@ class _TrackingScreenState extends State<TrackingScreen> {
         alignment: Alignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            width: 50,
+            height: 50,
             decoration: BoxDecoration(
               color: tracker.isSosTriggered ? Colors.red : Colors.red.withValues(alpha: 0.9),
-              borderRadius: BorderRadius.circular(16),
+              shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.red.withValues(alpha: 0.4),
-                  blurRadius: 8,
-                  spreadRadius: 1,
+                  color: Colors.red.withValues(alpha: 0.5),
+                  blurRadius: 12,
+                  spreadRadius: 2,
                 ),
               ],
+              border: Border.all(color: Colors.white.withValues(alpha: 0.8), width: 1.5),
             ),
-            child: Row(
+            child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
                   tracker.isSosTriggered ? Icons.warning_rounded : Icons.warning_amber_rounded,
                   color: Colors.white,
-                  size: 18,
+                  size: 20,
                 ),
-                const SizedBox(width: 6),
-                Text(
-                  tracker.isSosTriggered ? "SOS ACTIVE" : "HOLD SOS (3S)",
-                  style: const TextStyle(
+                const Text(
+                  "SOS",
+                  style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w900,
-                    fontSize: 11,
+                    fontSize: 8,
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -547,14 +569,13 @@ class _TrackingScreenState extends State<TrackingScreen> {
             ),
           ),
           if (_isSosLongPressing)
-            Positioned.fill(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: LinearProgressIndicator(
-                  value: _sosProgress,
-                  backgroundColor: Colors.transparent,
-                  color: Colors.white.withValues(alpha: 0.5),
-                ),
+            SizedBox(
+              width: 50,
+              height: 50,
+              child: CircularProgressIndicator(
+                value: _sosProgress,
+                valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                strokeWidth: 3,
               ),
             ),
         ],
@@ -563,20 +584,16 @@ class _TrackingScreenState extends State<TrackingScreen> {
   }
 
   Widget _buildDockedBottomPanel(TrackingProvider tracker, dynamic currentEvent) {
-    final double elapsedHours = _stopwatch.elapsed.inSeconds / 3600.0;
-    final double avgSpeed = tracker.avgSpeed > 0
-        ? tracker.avgSpeed
-        : (elapsedHours > 0 ? (tracker.totalDistance / elapsedHours) : 0.0);
     final altitudeProfile = _getEffectiveAltitudeProfile(currentEvent);
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
       padding: EdgeInsets.only(
-        top: 14,
-        left: 20,
-        right: 20,
-        bottom: MediaQuery.of(context).padding.bottom + 14,
+        top: 12,
+        left: 16,
+        right: 16,
+        bottom: MediaQuery.of(context).padding.bottom + 12,
       ),
       decoration: BoxDecoration(
         color: context.dashlyColors.surface,
@@ -595,7 +612,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Header Row with Hide/Show Toggle Button
+          // Header Row with Compact Toggle Button
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -615,7 +632,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
                   });
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: context.dashlyColors.divider.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(14),
@@ -649,178 +666,45 @@ class _TrackingScreenState extends State<TrackingScreen> {
 
           const SizedBox(height: 10),
 
-          // If Expanded: Show PageView & Indicators
-          if (!_isMetricsPanelCollapsed) ...[
-            SizedBox(
-              height: 145,
-              child: PageView(
-                controller: _pageController,
-                onPageChanged: (idx) {
-                  setState(() => _currentPage = idx);
-                },
-                children: [
-                  // PAGE 1: 6 Metrik Utama (Grid)
-                  _buildMetricsGrid(tracker, avgSpeed),
-
-                  // PAGE 2: Altitude Chart (Multi-Participant)
-                  if (altitudeProfile.isNotEmpty)
-                    AltitudeChartWidget(
-                      altitudeProfile: altitudeProfile,
-                      currentDistanceMeters: tracker.totalDistance * 1000,
-                      otherRunners: tracker.otherRunners,
-                    )
-                  else
-                    const Center(
-                      child: Text("No Altitude Profile Available", style: TextStyle(color: Colors.grey)),
-                    ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 10),
-
-            // Page Indicator Dots & Slide Text
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 6,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: _currentPage == 0 ? context.dashlyColors.accent : Colors.grey.withValues(alpha: 0.4),
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Container(
-                  width: 6,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: _currentPage == 1 ? context.dashlyColors.accent : Colors.grey.withValues(alpha: 0.4),
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  _currentPage == 0 ? "SLIDE FOR CHART ➔" : "⬅ SLIDE FOR METRICS",
-                  style: TextStyle(
-                    color: context.dashlyColors.textHint,
-                    fontSize: 9,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.0,
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 14),
-          ] else ...[
-            // Compact 1-row metrics view when panel is shrunk (Mengecil)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-              margin: const EdgeInsets.only(bottom: 14),
-              decoration: BoxDecoration(
-                color: context.dashlyColors.background.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: context.dashlyColors.divider.withValues(alpha: 0.3),
-                ),
-              ),
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _buildCompactMetric("TIME", _formatDuration(_stopwatch.elapsed), ""),
-                    _buildCompactDivider(),
-                    _buildCompactMetric("DIST", tracker.totalDistance.toStringAsFixed(2), "km"),
-                    _buildCompactDivider(),
-                    _buildCompactMetric("SPD", tracker.currentSpeed.toStringAsFixed(1), "km/h"),
-                    _buildCompactDivider(),
-                    _buildCompactMetric("AVG", avgSpeed.toStringAsFixed(1), "km/h"),
-                  ],
-                ),
-              ),
-            ),
-          ],
-
-          // ACTION BUTTONS ROW (SOS ONLY WHEN TRACKING, START WHEN INACTIVE)
+          // 3 HERO METRICS ROW: DURATION | DISTANCE | ELEVATION GAIN
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              if (tracker.isTracking)
-                Expanded(child: _buildSosButton(tracker))
-              else
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      final userId = context.read<AuthProvider>().currentUser?.id ?? 0;
-                      try {
-                        await tracker.startTracking(widget.eventId, userId);
-                        _stopwatch.start();
-                      } catch (e) {
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text("⚠️ $e", style: const TextStyle(fontWeight: FontWeight.bold)),
-                              backgroundColor: context.dashlyColors.error,
-                            ),
-                          );
-                        }
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: context.dashlyColors.accent,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    ),
-                    child: const Text(
-                      "START RACE NOW",
-                      style: TextStyle(color: Colors.black, fontWeight: FontWeight.w900, fontSize: 15),
-                    ),
-                  ),
-                ),
+              _buildHeroMetricItem("DURATION", _formatDuration(_stopwatch.elapsed), ""),
+              _buildHeroMetricDivider(),
+              _buildHeroMetricItem("DISTANCE", tracker.totalDistance.toStringAsFixed(2), "KM"),
+              _buildHeroMetricDivider(),
+              _buildHeroMetricItem("ELEV GAIN", tracker.elevationGain.toStringAsFixed(0), "M"),
             ],
           ),
+
+          if (!_isMetricsPanelCollapsed) ...[
+            const SizedBox(height: 12),
+            // ALTITUDE PROFILE CHART DIRECTLY BELOW METRICS
+            if (altitudeProfile.isNotEmpty)
+              AltitudeChartWidget(
+                altitudeProfile: altitudeProfile,
+                currentDistanceMeters: tracker.totalDistance * 1000,
+                otherRunners: tracker.otherRunners,
+              )
+            else
+              Container(
+                height: 50,
+                alignment: Alignment.center,
+                child: Text(
+                  "No Altitude Profile Available",
+                  style: TextStyle(color: context.dashlyColors.textHint, fontSize: 11),
+                ),
+              ),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildMetricsGrid(TrackingProvider tracker, double avgSpeed) {
+  Widget _buildHeroMetricItem(String label, String value, String unit) {
     return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // Row 1: Duration & Distance
-        Row(
-          children: [
-            Expanded(child: _buildMetricItem("DURATION", _formatDuration(_stopwatch.elapsed), "")),
-            _buildMetricDivider(),
-            Expanded(child: _buildMetricItem("DISTANCE", tracker.totalDistance.toStringAsFixed(2), "KM")),
-          ],
-        ),
-        const SizedBox(height: 16),
-        // Row 2: Elevation Gain & Speed
-        Row(
-          children: [
-            Expanded(child: _buildMetricItem("ELEV GAIN", tracker.elevationGain.toStringAsFixed(0), "M")),
-            _buildMetricDivider(),
-            Expanded(child: _buildMetricItem("SPEED", tracker.currentSpeed.toStringAsFixed(1), "KM/H")),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMetricDivider() {
-    return Container(
-      width: 1,
-      height: 32,
-      color: context.dashlyColors.divider.withValues(alpha: 0.4),
-    );
-  }
-
-  Widget _buildMetricItem(String label, String value, String unit) {
-    return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           label,
@@ -842,7 +726,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w900,
-                color: context.dashlyColors.textPrimary,
+                color: context.dashlyColors.accent,
                 fontFamily: 'monospace',
               ),
             ),
@@ -851,7 +735,8 @@ class _TrackingScreenState extends State<TrackingScreen> {
               Text(
                 unit,
                 style: TextStyle(
-                  fontSize: 9,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
                   color: context.dashlyColors.textHint,
                 ),
               ),
@@ -862,58 +747,11 @@ class _TrackingScreenState extends State<TrackingScreen> {
     );
   }
 
-  Widget _buildCompactMetric(String label, String value, String unit) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: context.dashlyColors.textHint,
-              fontSize: 8,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.8,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w900,
-                  color: context.dashlyColors.textPrimary,
-                  fontFamily: 'monospace',
-                ),
-              ),
-              if (unit.isNotEmpty) ...[
-                const SizedBox(width: 2),
-                Text(
-                  unit,
-                  style: TextStyle(
-                    fontSize: 8,
-                    color: context.dashlyColors.textHint,
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCompactDivider() {
+  Widget _buildHeroMetricDivider() {
     return Container(
       width: 1,
       height: 28,
-      color: context.dashlyColors.divider.withValues(alpha: 0.3),
+      color: context.dashlyColors.divider.withValues(alpha: 0.5),
     );
   }
 }
