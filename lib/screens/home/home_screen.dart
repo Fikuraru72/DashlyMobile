@@ -24,6 +24,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchCtrl = TextEditingController();
+  Map<int, Map<String, dynamic>> _summariesMap = {};
+  bool _isLoadingSummaries = false;
 
   @override
   void initState() {
@@ -32,9 +34,29 @@ class _HomeScreenState extends State<HomeScreen> {
       await PermissionOnboardingDialog.checkAndShow(context);
       if (!mounted) return;
       GpsStatusBanner.checkAndShowPopup(context);
-      context.read<EventProvider>().loadMyEvents();
+      await context.read<EventProvider>().loadMyEvents();
+      if (!mounted) return;
+      _loadLocalSummaries(context.read<EventProvider>().myEvents);
       context.read<DashboardProvider>().fetchDashboardData();
     });
+  }
+
+  Future<void> _loadLocalSummaries(List<Event> myEvents) async {
+    if (_isLoadingSummaries || myEvents.isEmpty) return;
+    _isLoadingSummaries = true;
+    final Map<int, Map<String, dynamic>> temp = {};
+    for (var ev in myEvents) {
+      final summary = await OfflineStorageService.getRaceSummary(ev.id);
+      if (summary != null) {
+        temp[ev.id] = summary;
+      }
+    }
+    _isLoadingSummaries = false;
+    if (mounted) {
+      setState(() {
+        _summariesMap = temp;
+      });
+    }
   }
 
   @override
@@ -46,10 +68,8 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
-    final dash = context.watch<DashboardProvider>();
     final eventProvider = context.watch<EventProvider>();
     final user = auth.currentUser;
-    final stats = dash.stats;
 
     // Find active event (exclude finished events)
     final activeEvents = eventProvider.myEvents.where((e) => 
@@ -60,13 +80,39 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final Event? activeEvent = activeEvents.isNotEmpty ? activeEvents.first : null;
 
-    // Recent events (newest 3 finished)
-    final recentEvents = (eventProvider.myEvents
-        .where((e) => e.participantState == ParticipantState.finished)
-        .toList()
-        ..sort((a, b) => b.dateEvent.compareTo(a.dateEvent)))
-        .take(3)
-        .toList();
+    // Recent events (tracked or finished events, newest summary first)
+    final recentEvents = (eventProvider.myEvents.where((e) {
+      return e.participantState == ParticipantState.finished ||
+          _summariesMap.containsKey(e.id) ||
+          e.durationSeconds != null;
+    }).toList()
+      ..sort((a, b) {
+        final summaryA = _summariesMap[a.id];
+        final summaryB = _summariesMap[b.id];
+        final String? timeAStr = summaryA?['updatedAt'] as String?;
+        final String? timeBStr = summaryB?['updatedAt'] as String?;
+        final DateTime timeA = timeAStr != null
+            ? DateTime.tryParse(timeAStr) ?? a.dateEvent
+            : a.dateEvent;
+        final DateTime timeB = timeBStr != null
+            ? DateTime.tryParse(timeBStr) ?? b.dateEvent
+            : b.dateEvent;
+        return timeB.compareTo(timeA);
+      }))
+      .take(3)
+      .toList();
+
+    // Actual participant registered events & total distance
+    final int registeredCount = eventProvider.myEvents.length;
+    double totalDistanceSum = 0.0;
+    for (var ev in eventProvider.myEvents) {
+      final summary = _summariesMap[ev.id];
+      if (summary != null && summary['totalDistanceKm'] != null) {
+        totalDistanceSum += (summary['totalDistanceKm'] as num).toDouble();
+      } else if (ev.durationSeconds != null && ev.avgSpeedKmh != null) {
+        totalDistanceSum += (ev.avgSpeedKmh! * (ev.durationSeconds! / 3600.0));
+      }
+    }
 
     return Scaffold(
       body: SingleChildScrollView(
@@ -196,9 +242,9 @@ class _HomeScreenState extends State<HomeScreen> {
             // Stats Grid
             Row(
               children: [
-                Expanded(child: _buildSmallStat(context, "Registered Events", stats.totalEvents.toString(), Icons.emoji_events_outlined)),
+                Expanded(child: _buildSmallStat(context, "Registered Events", registeredCount.toString(), Icons.emoji_events_outlined)),
                 const SizedBox(width: 12),
-                Expanded(child: _buildSmallStat(context, "Total Distance", "${stats.totalDistance.toStringAsFixed(1)} KM", Icons.route_outlined)),
+                Expanded(child: _buildSmallStat(context, "Total Distance", "${totalDistanceSum.toStringAsFixed(1)} KM", Icons.route_outlined)),
               ],
             ),
             const SizedBox(height: 32),
@@ -315,7 +361,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    "${event.dateEvent.day}/${event.dateEvent.month}/${event.dateEvent.year}",
+                                    _summariesMap.containsKey(event.id) && _summariesMap[event.id]!['totalDistanceKm'] != null
+                                        ? "${(_summariesMap[event.id]!['totalDistanceKm'] as num).toDouble().toStringAsFixed(2)} KM • ${(_summariesMap[event.id]!['avgSpeedKmh'] as num).toDouble().toStringAsFixed(1)} KM/H"
+                                        : "${event.dateEvent.day}/${event.dateEvent.month}/${event.dateEvent.year}",
                                     style: TextStyle(color: context.dashlyColors.textHint, fontSize: 12),
                                   ),
                                 ],
