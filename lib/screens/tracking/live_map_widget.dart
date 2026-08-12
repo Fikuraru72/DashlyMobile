@@ -39,7 +39,18 @@ class _LiveMapWidgetState extends State<LiveMapWidget> {
   MapLibreMapController? _mapController;
   bool _styleLoaded = false;
   bool _isRouteDrawn = false;
+  double _currentBearing = 0.0;
   DashlyLatLng? _lastAnimatedPosition;
+
+  double _calculateBearing(double lat1, double lng1, double lat2, double lng2) {
+    final dLng = (lng2 - lng1) * (pi / 180.0);
+    final phi1 = lat1 * (pi / 180.0);
+    final phi2 = lat2 * (pi / 180.0);
+    final y = sin(dLng) * cos(phi2);
+    final x = cos(phi1) * sin(phi2) - sin(phi1) * cos(phi2) * cos(dLng);
+    final bearing = atan2(y, x) * (180.0 / pi);
+    return (bearing + 360.0) % 360.0;
+  }
 
   @override
   void didUpdateWidget(LiveMapWidget oldWidget) {
@@ -50,20 +61,46 @@ class _LiveMapWidgetState extends State<LiveMapWidget> {
       _drawRoute();
     }
 
-    // Smoothly center camera target on participant pointer (> 3m movement)
+    // Smoothly center camera target on participant pointer and rotate bearing when turning (> 3m movement)
     if (_styleLoaded && _mapController != null && widget.currentPosition != null) {
       final pos = widget.currentPosition!;
+      final oldPos = oldWidget.currentPosition;
+
       if (_lastAnimatedPosition != null) {
         final dLat = (pos.latitude - _lastAnimatedPosition!.latitude).abs();
         final dLng = (pos.longitude - _lastAnimatedPosition!.longitude).abs();
         if (dLat < 0.00003 && dLng < 0.00003) return;
       }
 
+      // Determine heading/bearing: prefer position.heading, fallback to movement vector calculation
+      if (pos.heading > 0) {
+        _currentBearing = pos.heading;
+      } else if (oldPos != null) {
+        final dLat = (pos.latitude - oldPos.latitude).abs();
+        final dLng = (pos.longitude - oldPos.longitude).abs();
+        if (dLat > 0.000003 || dLng > 0.000003) {
+          _currentBearing = _calculateBearing(
+            oldPos.latitude,
+            oldPos.longitude,
+            pos.latitude,
+            pos.longitude,
+          );
+        }
+      }
+
       _lastAnimatedPosition = pos;
       try {
+        final double activeZoom = _mapController?.cameraPosition?.zoom ?? 18.0;
+        final double activeTilt = _mapController?.cameraPosition?.tilt ?? 55.0;
+
         _mapController?.animateCamera(
-          CameraUpdate.newLatLng(
-            LatLng(pos.latitude, pos.longitude),
+          CameraUpdate.newCameraPosition(
+            CameraPosition(
+              target: LatLng(pos.latitude, pos.longitude),
+              zoom: activeZoom,
+              tilt: activeTilt,
+              bearing: _currentBearing,
+            ),
           ),
         );
       } catch (e) {

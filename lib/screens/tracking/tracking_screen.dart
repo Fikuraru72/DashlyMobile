@@ -322,6 +322,21 @@ class _TrackingScreenState extends State<TrackingScreen> {
     final tracker = context.watch<TrackingProvider>();
     final eventProvider = context.watch<EventProvider>();
     final currentEvent = eventProvider.currentEvent;
+    final altitudeProfile = _getEffectiveAltitudeProfile(eventProvider);
+
+    double totalRouteKm = 0.0;
+    if (currentEvent?.totalDistanceMeters != null && currentEvent!.totalDistanceMeters! > 0) {
+      totalRouteKm = currentEvent.totalDistanceMeters! / 1000.0;
+    } else if (altitudeProfile.isNotEmpty) {
+      final lastPt = altitudeProfile.last;
+      if (lastPt is Map && lastPt['distance'] != null) {
+        totalRouteKm = (lastPt['distance'] as num).toDouble() / 1000.0;
+      }
+    }
+
+    final double remainingKm = totalRouteKm > tracker.totalDistance
+        ? (totalRouteKm - tracker.totalDistance)
+        : 0.0;
 
     // Check for auto-finish on every rebuild (triggered by tracker position updates)
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -362,7 +377,14 @@ class _TrackingScreenState extends State<TrackingScreen> {
               child: _buildHeaderPill(tracker, currentEvent),
             ),
 
-            // 3. FLOATING CIRCULAR SOS BUTTON (Top Right below Header Pill)
+            // 3. TOP LEFT TO DESTINATION BADGE
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 65,
+              left: 16,
+              child: _buildToDestinationBadge(remainingKm),
+            ),
+
+            // 4. FLOATING CIRCULAR SOS BUTTON (Top Right below Header Pill)
             if (tracker.isTracking)
               Positioned(
                 top: MediaQuery.of(context).padding.top + 65,
@@ -494,6 +516,44 @@ class _TrackingScreenState extends State<TrackingScreen> {
           ),
           const SizedBox(width: 8),
           _buildConnectionBadge(tracker.isMqttConnected),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildToDestinationBadge(double remainingKm) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      decoration: BoxDecoration(
+        color: context.dashlyColors.surface.withValues(alpha: 0.95),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: context.dashlyColors.accent.withValues(alpha: 0.6)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.4),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.flag_rounded,
+            color: context.dashlyColors.accent,
+            size: 14,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            "${remainingKm.toStringAsFixed(2)} KM TO DESTINATION",
+            style: TextStyle(
+              color: context.dashlyColors.textPrimary,
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.6,
+            ),
+          ),
         ],
       ),
     );
