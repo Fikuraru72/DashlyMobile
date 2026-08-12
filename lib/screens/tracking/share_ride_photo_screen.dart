@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:gal/gal.dart';
 import '../../core/utils/geo_utils.dart';
+import '../../models/event_model.dart';
 import '../../providers/event_provider.dart';
 import '../../theme/dashly_theme.dart';
 
@@ -58,10 +59,49 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
   void initState() {
     super.initState();
     _extractRoutePoints();
+    if (_routePoints.isEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _asyncFetchRoutePoints();
+      });
+    }
+  }
+
+  Future<void> _asyncFetchRoutePoints() async {
+    try {
+      final eventProv = context.read<EventProvider>();
+      final Event? evData = await eventProv.fetchEventDetails(widget.eventId);
+      if (evData != null && evData.routeGeojson != null) {
+        _parseGeojson(evData.routeGeojson);
+        if (mounted && _routePoints.isNotEmpty) {
+          setState(() {});
+        }
+      }
+    } catch (e) {
+      print("Async route fetch error: $e");
+    }
   }
 
   void _extractRoutePoints() {
     dynamic rawGeojson = widget.routeGeojson;
+    if (rawGeojson == null) {
+      final eventProv = context.read<EventProvider>();
+      final cached = eventProv.getCachedEvent(widget.eventId);
+      if (cached?.routeGeojson != null) {
+        rawGeojson = cached!.routeGeojson;
+      } else {
+        try {
+          final myEv = eventProv.myEvents.firstWhere((e) => e.id == widget.eventId);
+          if (myEv.routeGeojson != null) {
+            rawGeojson = myEv.routeGeojson;
+          }
+        } catch (_) {}
+      }
+    }
+    _parseGeojson(rawGeojson);
+  }
+
+  void _parseGeojson(dynamic rawGeojson) {
+    if (rawGeojson == null) return;
     Map<String, dynamic>? geojson;
 
     if (rawGeojson is String) {
@@ -70,21 +110,6 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
       } catch (_) {}
     } else if (rawGeojson is Map<String, dynamic>) {
       geojson = rawGeojson;
-    }
-
-    if (geojson == null) {
-      final eventProv = context.read<EventProvider>();
-      final cached = eventProv.getCachedEvent(widget.eventId);
-      if (cached?.routeGeojson != null) {
-        geojson = cached!.routeGeojson;
-      } else {
-        try {
-          final myEv = eventProv.myEvents.firstWhere((e) => e.id == widget.eventId);
-          if (myEv.routeGeojson != null) {
-            geojson = myEv.routeGeojson;
-          }
-        } catch (_) {}
-      }
     }
 
     if (geojson != null) {

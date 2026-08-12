@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../models/event_model.dart';
 import '../../providers/event_provider.dart';
 import '../../theme/dashly_theme.dart';
 import 'share_ride_photo_screen.dart';
@@ -48,9 +49,15 @@ class RaceSummaryScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final eventProvider = context.watch<EventProvider>();
-    final currentEvent = (eventProvider.currentEvent?.id == eventId)
+    Event? currentEvent = (eventProvider.currentEvent?.id == eventId)
         ? eventProvider.currentEvent
         : eventProvider.getCachedEvent(eventId);
+
+    if (currentEvent == null) {
+      try {
+        currentEvent = eventProvider.myEvents.firstWhere((e) => e.id == eventId);
+      } catch (_) {}
+    }
 
     final String bibText = (currentEvent != null && currentEvent.bibNumber != null)
         ? " • BIB #${currentEvent.bibNumber}"

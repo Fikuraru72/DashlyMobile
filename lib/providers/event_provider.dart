@@ -163,6 +163,16 @@ class EventProvider extends ChangeNotifier {
     );
   }
 
+  /// Fetches full event details by ID and caches it.
+  Future<Event?> fetchEventDetails(int eventId) async {
+    final event = await _eventService.fetchEventDetails(eventId);
+    if (event != null) {
+      _eventCache[eventId] = event;
+      notifyListeners();
+    }
+    return event;
+  }
+
   /// Fetches the participant's ticket (contains bibNumber, etc.)
   Future<Map<String, dynamic>?> fetchParticipantTicket(int eventId) async {
     return await _eventService.getParticipantTicket(eventId);
