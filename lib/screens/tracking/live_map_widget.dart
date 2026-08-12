@@ -1,14 +1,15 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 import '../../core/utils/geo_utils.dart';
 
 /// ════════════════════════════════════════════════════════════════
-/// Live Map Widget — MapLibre GL Native 3D Compass Tracking
+/// Live Map Widget — MapLibre GL Native Location Tracking
 /// ════════════════════════════════════════════════════════════════
 /// Displays real-time GPS location on a dark-themed map.
-/// Delegates 3D camera follow & compass rotation natively to MapLibre's
-/// C++ engine (myLocationTrackingMode.trackingCompass), eliminating
-/// redundant JNI animateCamera calls in didUpdateWidget for 100% stability.
+/// Uses safe MyLocationTrackingMode.tracking and MyLocationRenderMode.normal
+/// to prevent Android 14 native C++ sensor crashes in libmaplibre.so.
 /// ════════════════════════════════════════════════════════════════
 
 // MapTiler API Key — dataviz-dark style
@@ -137,10 +138,10 @@ class _LiveMapWidgetState extends State<LiveMapWidget> {
       onStyleLoadedCallback: _onStyleLoaded,
       trackCameraPosition: true,
       myLocationEnabled: true,
-      myLocationTrackingMode: MyLocationTrackingMode.trackingCompass,
-      myLocationRenderMode: MyLocationRenderMode.compass,
+      myLocationTrackingMode: MyLocationTrackingMode.tracking,
+      myLocationRenderMode: MyLocationRenderMode.normal,
       compassEnabled: false,
-      attributionButtonMargins: const Point(-100, -100), // hide off-screen
+      attributionButtonMargins: const Point(-10, -10),
     );
   }
 }
