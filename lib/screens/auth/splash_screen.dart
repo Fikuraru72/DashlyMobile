@@ -57,18 +57,28 @@ class _SplashScreenState extends State<SplashScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.directions_run_rounded,
-              size: 80,
+              Icons.directions_bike_rounded,
+              size: 84,
               color: context.dashlyColors.accent,
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             Text(
-              "DASHLY",
+              "ECO RACE MAPS",
               style: TextStyle(
-                fontSize: 32,
+                fontSize: 26,
                 fontWeight: FontWeight.w900,
-                letterSpacing: 8,
+                letterSpacing: 4,
                 color: context.dashlyColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "CYCLING TRACKING PLATFORM 🚴‍♂️",
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 2,
+                color: context.dashlyColors.accent,
               ),
             ),
             const SizedBox(height: 40),

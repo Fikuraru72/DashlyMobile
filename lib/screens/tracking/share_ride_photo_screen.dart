@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
@@ -15,7 +16,7 @@ import '../../theme/dashly_theme.dart';
 /// ShareRidePhotoScreen — Ultra-Clean Minimalist Cycling Photo Share 📸
 /// ════════════════════════════════════════════════════════════════
 /// Features:
-/// 1. Top Header: Event Name + Dashly Cycling & BIB Badge
+/// 1. Top Header: Event Name + EcoRaceMaps Cycling & BIB Badge
 /// 2. Bottom-Left 2x2 Grid Stats (Distance, Time HH:MM, Avg, Elev)
 ///    - Floating pure white text (No black background box)
 /// 3. Bottom-Right: Neon Green Floating GPS Vector Route Line 💚
@@ -60,8 +61,18 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
   }
 
   void _extractRoutePoints() {
-    Map<String, dynamic>? geojson = widget.routeGeojson;
-    if (geojson == null && mounted) {
+    dynamic rawGeojson = widget.routeGeojson;
+    Map<String, dynamic>? geojson;
+
+    if (rawGeojson is String) {
+      try {
+        geojson = jsonDecode(rawGeojson) as Map<String, dynamic>?;
+      } catch (_) {}
+    } else if (rawGeojson is Map<String, dynamic>) {
+      geojson = rawGeojson;
+    }
+
+    if (geojson == null) {
       final eventProv = context.read<EventProvider>();
       final cached = eventProv.getCachedEvent(widget.eventId);
       if (cached?.routeGeojson != null) {
@@ -85,8 +96,12 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
         } else if (geojson['type'] == 'Feature' && geojson['geometry'] != null) {
           rawCoords = geojson['geometry']['coordinates'] ?? [];
         } else if (geojson['type'] == 'FeatureCollection' && geojson['features'] != null && (geojson['features'] as List).isNotEmpty) {
-          final feat = (geojson['features'] as List).first;
-          rawCoords = feat['geometry']['coordinates'] ?? [];
+          for (var feat in geojson['features']) {
+            if (feat is Map && feat['geometry'] != null && feat['geometry']['coordinates'] is List) {
+              rawCoords = feat['geometry']['coordinates'];
+              if (rawCoords.isNotEmpty) break;
+            }
+          }
         }
 
         final parsed = <DashlyLatLng>[];
@@ -164,7 +179,7 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
 
       final pngBytes = byteData.buffer.asUint8List();
       final tempDir = await getTemporaryDirectory();
-      final filePath = '${tempDir.path}/dashly_ride_${DateTime.now().millisecondsSinceEpoch}.png';
+      final filePath = '${tempDir.path}/ecoracemaps_ride_${DateTime.now().millisecondsSinceEpoch}.png';
       final file = File(filePath);
       await file.writeAsBytes(pngBytes);
       return file;
@@ -189,7 +204,7 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
         if (!hasAccess) {
           await Gal.requestAccess();
         }
-        await Gal.putImage(file.path, album: 'Dashly');
+        await Gal.putImage(file.path, album: 'EcoRaceMaps');
         galSuccess = true;
       } catch (galError) {
         print("Gal save error (falling back to direct file write): $galError");
@@ -407,13 +422,13 @@ class _ShareRidePhotoScreenState extends State<ShareRidePhotoScreen> {
                                           ),
                                           const SizedBox(height: 4),
 
-                                          // Dashly Cycling Title in Pure White Text
+                                          // EcoRaceMaps Cycling Title in Pure White Text
                                           Row(
                                             children: [
                                               const Icon(Icons.bolt_rounded, size: 12, color: Colors.white),
                                               const SizedBox(width: 3),
                                               Text(
-                                                "DASHLY CYCLING",
+                                                "ECO RACE MAPS CYCLING",
                                                 style: TextStyle(
                                                   color: Colors.white.withValues(alpha: 0.9),
                                                   fontWeight: FontWeight.w900,
