@@ -349,7 +349,11 @@ class _TrackingScreenState extends State<TrackingScreen> {
         if (didPop) return;
         final confirm = await _showExitConfirmation();
         if (confirm && context.mounted) {
-          Navigator.pop(context, result);
+          final nav = Navigator.of(context);
+          final eventProv = context.read<EventProvider>();
+          await context.read<TrackingProvider>().stopTracking();
+          eventProv.clearCurrentEvent();
+          nav.pop(result);
         }
       },
       child: Scaffold(

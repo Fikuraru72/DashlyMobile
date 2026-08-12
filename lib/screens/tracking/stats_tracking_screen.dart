@@ -337,10 +337,15 @@ class _StatsTrackingScreenState extends State<StatsTrackingScreen> {
         final confirm = await _showExitConfirmation();
         if (confirm && context.mounted) {
           if (tracker.isTracking) {
-            tracker.stopTracking();
+            await tracker.stopTracking();
             _stopwatch.stop();
+            if (context.mounted) {
+              context.read<EventProvider>().clearCurrentEvent();
+            }
           }
-          Navigator.pop(context, result);
+          if (context.mounted) {
+            Navigator.pop(context, result);
+          }
         }
       },
       child: Scaffold(

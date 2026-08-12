@@ -117,8 +117,17 @@ class EventProvider extends ChangeNotifier {
     }
   }
 
+  void clearCurrentEvent() {
+    _currentEvent = null;
+    notifyListeners();
+  }
+
   /// Fetches full event details and stores as currentEvent (with instant cache retrieval).
   Future<Event?> fetchEvent(int eventId) async {
+    if (_currentEvent != null && _currentEvent!.id != eventId) {
+      _currentEvent = null;
+      notifyListeners();
+    }
     if (_eventCache.containsKey(eventId)) {
       _currentEvent = _eventCache[eventId];
       notifyListeners();

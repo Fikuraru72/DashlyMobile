@@ -63,10 +63,18 @@ class TrackingProvider extends ChangeNotifier {
   bool _isSosTriggered = false;
   bool get isSosTriggered => _isSosTriggered;
 
+  int? _activeEventId;
+  int? get activeEventId => _activeEventId;
+
   Future<void> startTracking(int eventId, int userId, {EventCategory category = EventCategory.running}) async {
     print('PROV: 🏁 [DEBUG] startTracking triggered for event: $eventId, user: $userId');
     
     try {
+      if (_isTracking && _activeEventId != null && _activeEventId != eventId) {
+        print('PROV: 🔄 Switching active tracking from event $_activeEventId to $eventId. Stopping previous session.');
+        await stopTracking();
+      }
+      _activeEventId = eventId;
       _isTracking = true;
       _isSosTriggered = false;
       _category = category;
@@ -187,6 +195,8 @@ class TrackingProvider extends ChangeNotifier {
   Future<void> stopTracking() async {
     print('PROV: 🛑 [DEBUG] stopTracking triggered');
     _isTracking = false;
+    _activeEventId = null;
+    _currentPosition = null;
     _isSosTriggered = false;
     _locationService.isFrozen = false;
     _mqttService.setTrackingActive(false);
