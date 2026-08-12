@@ -12,6 +12,7 @@ import '../../components/gps_status_banner.dart';
 import '../onboarding/permission_onboarding_dialog.dart';
 import '../tracking/race_summary_screen.dart';
 import '../../services/offline_storage_service.dart';
+import '../main_navigation.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -170,21 +171,22 @@ class _HomeScreenState extends State<HomeScreen> {
                             fontWeight: FontWeight.bold,
                           ),
                     ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          // Navigate to explore screen
-                          Navigator.pushNamed(context, '/main'); // MainNavigation defaults to home, maybe we just use bottom nav or a direct route
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: context.dashlyColors.accent,
-                          foregroundColor: Colors.black,
+                    if (MainNavigation.isExploreEnabled) ...[
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.pushNamed(context, '/main');
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: context.dashlyColors.accent,
+                            foregroundColor: Colors.black,
+                          ),
+                          child: const Text("EXPLORE EVENTS"),
                         ),
-                        child: const Text("EXPLORE EVENTS"),
                       ),
-                    )
+                    ],
                   ],
                 ),
               ),

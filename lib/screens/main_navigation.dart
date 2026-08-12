@@ -10,6 +10,9 @@ import 'profile/profile_screen.dart';
 import '../services/location_service.dart';
 
 class MainNavigation extends StatefulWidget {
+  /// Feature Flag: Toggle to enable/disable Explore page tab
+  static const bool isExploreEnabled = false;
+
   const MainNavigation({super.key});
 
   @override
@@ -35,7 +38,7 @@ class _MainNavigationState extends State<MainNavigation> {
   void _onItemTapped(int index) {
     if (index == 0 || index == 2) {
       context.read<EventProvider>().loadMyEvents(isSilent: true);
-    } else if (index == 1) {
+    } else if (index == 1 && MainNavigation.isExploreEnabled) {
       context.read<EventListProvider>().loadExploreEvents(isSilent: true);
       context.read<EventListProvider>().loadMyEventsForMerge();
     }
@@ -60,7 +63,8 @@ class _MainNavigationState extends State<MainNavigation> {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _buildNavItem(Icons.home_rounded, "Home", 0),
-              _buildNavItem(Icons.explore_rounded, "Explore", 1),
+              if (MainNavigation.isExploreEnabled)
+                _buildNavItem(Icons.explore_rounded, "Explore", 1),
               _buildNavItem(Icons.event_note_rounded, "My Event", 2),
               _buildNavItem(Icons.person_rounded, "Profile", 3),
             ],
