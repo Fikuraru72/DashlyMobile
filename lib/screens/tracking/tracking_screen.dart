@@ -535,16 +535,16 @@ class _TrackingScreenState extends State<TrackingScreen> {
 
   Widget _buildToDestinationBadge(double remainingKm) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
         color: context.dashlyColors.surface.withValues(alpha: 0.95),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: context.dashlyColors.accent.withValues(alpha: 0.6)),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: context.dashlyColors.accent.withValues(alpha: 0.7), width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.4),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
+            color: Colors.black.withValues(alpha: 0.45),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -558,28 +558,28 @@ class _TrackingScreenState extends State<TrackingScreen> {
               Icon(
                 Icons.flag_rounded,
                 color: context.dashlyColors.accent,
-                size: 13,
+                size: 15,
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: 5),
               Text(
                 "TO DESTINATION",
                 style: TextStyle(
                   color: context.dashlyColors.textHint,
-                  fontSize: 9,
+                  fontSize: 10,
                   fontWeight: FontWeight.w900,
-                  letterSpacing: 1.0,
+                  letterSpacing: 1.2,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 3),
           Text(
             "${remainingKm.toStringAsFixed(2)} KM",
             style: TextStyle(
               color: context.dashlyColors.textPrimary,
-              fontSize: 18,
+              fontSize: 26,
               fontWeight: FontWeight.w900,
-              letterSpacing: 0.5,
+              letterSpacing: 0.8,
             ),
           ),
         ],
@@ -824,9 +824,9 @@ class _TrackingScreenState extends State<TrackingScreen> {
           label,
           style: TextStyle(
             color: context.dashlyColors.textHint,
-            fontSize: 9,
+            fontSize: 10,
             fontWeight: FontWeight.bold,
-            letterSpacing: 1.0,
+            letterSpacing: 1.2,
           ),
         ),
         const SizedBox(height: 4),
@@ -838,18 +838,19 @@ class _TrackingScreenState extends State<TrackingScreen> {
             Text(
               value,
               style: TextStyle(
-                fontSize: 18,
+                fontSize: 24,
                 fontWeight: FontWeight.w900,
                 color: context.dashlyColors.accent,
                 fontFamily: 'monospace',
+                letterSpacing: 0.5,
               ),
             ),
             if (unit.isNotEmpty) ...[
-              const SizedBox(width: 2),
+              const SizedBox(width: 3),
               Text(
                 unit,
                 style: TextStyle(
-                  fontSize: 10,
+                  fontSize: 11,
                   fontWeight: FontWeight.bold,
                   color: context.dashlyColors.textHint,
                 ),
