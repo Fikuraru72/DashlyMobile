@@ -20,10 +20,14 @@ class AltitudeChartWidget extends StatefulWidget {
 
 class _AltitudeChartWidgetState extends State<AltitudeChartWidget> {
   double _zoomFactor = 1.0; // 1.0x (full view) up to 4.0x
+  double _baseZoomFactor = 1.0;
 
   void _zoomIn() {
     setState(() {
-      if (_zoomFactor < 4.0) _zoomFactor += 0.75;
+      if (_zoomFactor < 4.0) {
+        _zoomFactor += 0.75;
+        if (_zoomFactor > 4.0) _zoomFactor = 4.0;
+      }
     });
   }
 
@@ -143,105 +147,119 @@ class _AltitudeChartWidgetState extends State<AltitudeChartWidget> {
       decoration: BoxDecoration(
         color: context.dashlyColors.surface.withValues(alpha: 0.85),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: context.dashlyColors.divider.withValues(alpha: 0.6)),
       ),
       child: Stack(
         children: [
-          // Chart View
+          // Chart View with 2-Finger Pinch-to-Zoom Support
           Positioned.fill(
-            child: LineChart(
-              LineChartData(
-                minX: minX,
-                maxX: maxX,
-                minY: minElev - 10 < 0 ? 0 : minElev - 10,
-                maxY: maxElev + 15,
-                gridData: FlGridData(
-                  show: true,
-                  drawVerticalLine: false,
-                  horizontalInterval: 50,
-                  getDrawingHorizontalLine: (value) {
-                    return FlLine(
-                      color: context.dashlyColors.divider.withValues(alpha: 0.5),
-                      strokeWidth: 1,
-                      dashArray: [4, 4],
-                    );
-                  },
-                ),
-                titlesData: FlTitlesData(
-                  show: true,
-                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 42,
-                      getTitlesWidget: (value, meta) {
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 6.0),
-                          child: Text(
-                            '${value.toInt()}m',
-                            style: TextStyle(color: context.dashlyColors.textHint, fontSize: 9),
-                            textAlign: TextAlign.right,
-                          ),
-                        );
-                      },
-                    ),
+            child: GestureDetector(
+              onScaleStart: (details) {
+                _baseZoomFactor = _zoomFactor;
+              },
+              onScaleUpdate: (details) {
+                if (details.scale != 1.0) {
+                  setState(() {
+                    double newZoom = _baseZoomFactor * details.scale;
+                    if (newZoom < 1.0) newZoom = 1.0;
+                    if (newZoom > 4.0) newZoom = 4.0;
+                    _zoomFactor = newZoom;
+                  });
+                }
+              },
+              child: LineChart(
+                LineChartData(
+                  minX: minX,
+                  maxX: maxX,
+                  minY: minElev - 10 < 0 ? 0 : minElev - 10,
+                  maxY: maxElev + 15,
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: false,
+                    horizontalInterval: 50,
+                    getDrawingHorizontalLine: (value) {
+                      return FlLine(
+                        color: context.dashlyColors.divider.withValues(alpha: 0.5),
+                        strokeWidth: 1,
+                        dashArray: [4, 4],
+                      );
+                    },
                   ),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 22,
-                      interval: (maxX - minX) / 4 > 0 ? (maxX - minX) / 4 : 1000,
-                      getTitlesWidget: (value, meta) {
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 6.0),
-                          child: Text(
-                            '${(value / 1000).toStringAsFixed(1)}km',
-                            style: TextStyle(color: context.dashlyColors.textHint, fontSize: 9),
-                          ),
-                        );
-                      },
+                  titlesData: FlTitlesData(
+                    show: true,
+                    rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 42,
+                        getTitlesWidget: (value, meta) {
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 6.0),
+                            child: Text(
+                              '${value.toInt()}m',
+                              style: TextStyle(color: context.dashlyColors.textHint, fontSize: 9),
+                              textAlign: TextAlign.right,
+                            ),
+                          );
+                        },
+                      ),
                     ),
-                  ),
-                ),
-                borderData: FlBorderData(show: false),
-                lineBarsData: [
-                  LineChartBarData(
-                    spots: spots,
-                    isCurved: true,
-                    color: context.dashlyColors.accent,
-                    barWidth: 2.5,
-                    isStrokeCapRound: true,
-                    showingIndicators: spots.isNotEmpty ? [userSpotIndex] : [],
-                    dotData: FlDotData(
-                      show: true,
-                      checkToShowDot: (spot, barData) {
-                        return (spot.x - widget.currentDistanceMeters).abs() < 50;
-                      },
-                      getDotPainter: (spot, percent, barData, index) {
-                        return FlDotCirclePainter(
-                          radius: 5,
-                          color: Colors.cyanAccent,
-                          strokeWidth: 2,
-                          strokeColor: Colors.white,
-                        );
-                      },
-                    ),
-                    belowBarData: BarAreaData(
-                      show: true,
-                      gradient: LinearGradient(
-                        colors: [
-                          context.dashlyColors.accent.withValues(alpha: 0.4),
-                          context.dashlyColors.accent.withValues(alpha: 0.0),
-                        ],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 22,
+                        interval: (maxX - minX) / 4 > 0 ? (maxX - minX) / 4 : 1000,
+                        getTitlesWidget: (value, meta) {
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 6.0),
+                            child: Text(
+                              '${(value / 1000).toStringAsFixed(1)}km',
+                              style: TextStyle(color: context.dashlyColors.textHint, fontSize: 9),
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ),
-                ],
-                extraLinesData: ExtraLinesData(
-                  verticalLines: verticalLines,
+                  borderData: FlBorderData(show: false),
+                  lineBarsData: [
+                    LineChartBarData(
+                      spots: spots,
+                      isCurved: true,
+                      color: context.dashlyColors.accent,
+                      barWidth: 2.5,
+                      isStrokeCapRound: true,
+                      showingIndicators: spots.isNotEmpty ? [userSpotIndex] : [],
+                      dotData: FlDotData(
+                        show: true,
+                        checkToShowDot: (spot, barData) {
+                          return (spot.x - widget.currentDistanceMeters).abs() < 50;
+                        },
+                        getDotPainter: (spot, percent, barData, index) {
+                          return FlDotCirclePainter(
+                            radius: 5,
+                            color: Colors.cyanAccent,
+                            strokeWidth: 2,
+                            strokeColor: Colors.white,
+                          );
+                        },
+                      ),
+                      belowBarData: BarAreaData(
+                        show: true,
+                        gradient: LinearGradient(
+                          colors: [
+                            context.dashlyColors.accent.withValues(alpha: 0.4),
+                            context.dashlyColors.accent.withValues(alpha: 0.0),
+                          ],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
+                      ),
+                    ),
+                  ],
+                  extraLinesData: ExtraLinesData(
+                    verticalLines: verticalLines,
+                  ),
                 ),
               ),
             ),

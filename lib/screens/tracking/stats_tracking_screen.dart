@@ -163,7 +163,16 @@ class _StatsTrackingScreenState extends State<StatsTrackingScreen> {
     }
   }
 
-  List<dynamic> _getEffectiveAltitudeProfile(dynamic event) {
+  List<dynamic> _getEffectiveAltitudeProfile(EventProvider eventProvider) {
+    dynamic event = eventProvider.currentEvent;
+
+    // Instant Fallback: If currentEvent is null or lacks route data, use cached myEvents in eventProvider
+    if (event == null || (event.altitudeProfile == null && event.routeGeojson == null)) {
+      try {
+        event = eventProvider.myEvents.firstWhere((e) => e.id == widget.eventId);
+      } catch (_) {}
+    }
+
     if (event?.altitudeProfile != null && (event.altitudeProfile as List).isNotEmpty) {
       return event.altitudeProfile!;
     }
@@ -314,7 +323,7 @@ class _StatsTrackingScreenState extends State<StatsTrackingScreen> {
     final double avgSpeed = tracker.avgSpeed > 0
         ? tracker.avgSpeed
         : (elapsedHours > 0 ? (tracker.totalDistance / elapsedHours) : 0.0);
-    final altitudeProfile = _getEffectiveAltitudeProfile(currentEvent);
+    final altitudeProfile = _getEffectiveAltitudeProfile(eventProvider);
 
     return PopScope(
       canPop: false,

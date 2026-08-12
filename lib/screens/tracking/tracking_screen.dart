@@ -160,7 +160,16 @@ class _TrackingScreenState extends State<TrackingScreen> {
     }
   }
 
-  List<dynamic> _getEffectiveAltitudeProfile(dynamic event) {
+  List<dynamic> _getEffectiveAltitudeProfile(EventProvider eventProvider) {
+    dynamic event = eventProvider.currentEvent;
+
+    // Instant Fallback: If currentEvent is null or lacks route data, use cached myEvents in eventProvider
+    if (event == null || (event.altitudeProfile == null && event.routeGeojson == null)) {
+      try {
+        event = eventProvider.myEvents.firstWhere((e) => e.id == widget.eventId);
+      } catch (_) {}
+    }
+
     if (event?.altitudeProfile != null && (event.altitudeProfile as List).isNotEmpty) {
       return event.altitudeProfile!;
     }
@@ -360,7 +369,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
               left: 0,
               right: 0,
               bottom: 0,
-              child: _buildDockedBottomPanel(tracker, currentEvent),
+              child: _buildDockedBottomPanel(tracker, eventProvider),
             ),
 
             // 5. MAP CONTROLS - LEFT SIDE (Reset North & Center Pointer)
@@ -583,8 +592,8 @@ class _TrackingScreenState extends State<TrackingScreen> {
     );
   }
 
-  Widget _buildDockedBottomPanel(TrackingProvider tracker, dynamic currentEvent) {
-    final altitudeProfile = _getEffectiveAltitudeProfile(currentEvent);
+  Widget _buildDockedBottomPanel(TrackingProvider tracker, EventProvider eventProvider) {
+    final altitudeProfile = _getEffectiveAltitudeProfile(eventProvider);
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
