@@ -8,8 +8,8 @@ import '../../core/utils/geo_utils.dart';
 /// Live Map Widget — MapLibre GL + MapTiler Dark Mode
 /// ════════════════════════════════════════════════════════════════
 /// Shows the user's real-time GPS location on a dark-themed map.
-/// Uses MapLibre's native `myLocationEnabled` for the location marker.
-/// Includes crash safeguards for Android OpenGL driver stability.
+/// Supports 3D Tilt (55°) and trackCameraPosition: true with
+/// native C++ Camera Animation Mutex protection against race conditions.
 /// ════════════════════════════════════════════════════════════════
 
 // MapTiler API Key — dataviz-dark style
@@ -39,6 +39,8 @@ class _LiveMapWidgetState extends State<LiveMapWidget> {
   MapLibreMapController? _mapController;
   bool _styleLoaded = false;
   bool _isRouteDrawn = false;
+  bool _isCameraAnimating = false;
+  DateTime? _lastAnimationTime;
   double _currentBearing = 0.0;
   DashlyLatLng? _lastAnimatedPosition;
 
@@ -64,10 +66,17 @@ class _LiveMapWidgetState extends State<LiveMapWidget> {
       return;
     }
 
+    // SAFEGUARD 2: Camera Mutex & Debounce — prevent overlapping C++ animations
+    final now = DateTime.now();
+    if (_isCameraAnimating) return;
+    if (_lastAnimationTime != null && now.difference(_lastAnimationTime!).inMilliseconds < 800) {
+      return;
+    }
+
     final pos = widget.currentPosition!;
     final oldPos = oldWidget.currentPosition;
 
-    // SAFEGUARD 2: Throttling — only animate camera if position moved > 3 meters (~0.00003 deg)
+    // SAFEGUARD 3: Throttling — only animate camera if position moved > 3 meters (~0.00003 deg)
     if (_lastAnimatedPosition != null) {
       final dLat = (pos.latitude - _lastAnimatedPosition!.latitude).abs();
       final dLng = (pos.longitude - _lastAnimatedPosition!.longitude).abs();
@@ -92,14 +101,22 @@ class _LiveMapWidgetState extends State<LiveMapWidget> {
       }
     }
 
-    // SAFEGUARD 3: Wrap camera animation in try-catch to prevent native C++ engine crashes
+    _triggerSafeCameraAnimation(pos);
+  }
+
+  Future<void> _triggerSafeCameraAnimation(DashlyLatLng pos) async {
+    if (!mounted || _mapController == null || !_styleLoaded) return;
+
+    _isCameraAnimating = true;
+    _lastAnimationTime = DateTime.now();
+
     try {
-      _mapController?.animateCamera(
+      await _mapController?.animateCamera(
         CameraUpdate.newCameraPosition(
           CameraPosition(
             target: LatLng(pos.latitude, pos.longitude),
             zoom: 18.0,
-            tilt: 55.0,
+            tilt: 55.0, // 3D Angled View retained!
             bearing: _currentBearing,
           ),
         ),
@@ -107,6 +124,10 @@ class _LiveMapWidgetState extends State<LiveMapWidget> {
       _lastAnimatedPosition = pos;
     } catch (e) {
       debugPrint("⚠️ [LiveMapWidget] Camera animation error caught safely: $e");
+    } finally {
+      if (mounted) {
+        _isCameraAnimating = false;
+      }
     }
   }
 
@@ -118,6 +139,15 @@ class _LiveMapWidgetState extends State<LiveMapWidget> {
   void _onStyleLoaded() {
     _styleLoaded = true;
     _drawRoute();
+
+    // SAFEGUARD 4: 500ms delayed initial camera centering to ensure OpenGL surface texture binding
+    if (widget.currentPosition != null) {
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted && widget.currentPosition != null) {
+          _triggerSafeCameraAnimation(widget.currentPosition!);
+        }
+      });
+    }
   }
 
   /// Normalize any GeoJSON variant into a FeatureCollection that MapLibre expects.
@@ -191,12 +221,12 @@ class _LiveMapWidgetState extends State<LiveMapWidget> {
       initialCameraPosition: CameraPosition(
         target: initialPos,
         zoom: 18.0,
-        tilt: 55.0,
+        tilt: 55.0, // Retain 3D View!
       ),
       styleString: styleUrl,
       onMapCreated: _onMapCreated,
       onStyleLoadedCallback: _onStyleLoaded,
-      trackCameraPosition: true,
+      trackCameraPosition: true, // Retain trackCameraPosition!
       myLocationEnabled: true,
       myLocationTrackingMode: MyLocationTrackingMode.tracking,
       myLocationRenderMode: MyLocationRenderMode.normal,
