@@ -445,9 +445,18 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
-    // 3. Prompt for BIB number (Req 3 - Default field empty)
+    // 3. Bypass BIB prompt if participant is already confirmed/tracking or has verified BIB
+    bool isAlreadyVerified = event.participantState == ParticipantState.confirmed ||
+        event.participantState == ParticipantState.tracking ||
+        (event.bibNumber != null && event.bibNumber!.isNotEmpty);
+
+    if (isAlreadyVerified) {
+      showTrackingModeSelectionDialog(context, eventId: event.id, eventName: event.name);
+      return;
+    }
+
     if (!context.mounted) return;
-    final TextEditingController bibController = TextEditingController(text: '');
+    final TextEditingController bibController = TextEditingController(text: event.bibNumber ?? '');
 
     bool? isBibVerified = await showDialog<bool>(
       context: context,
@@ -496,7 +505,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   TextField(
                     controller: bibController,
                     autofocus: true,
-                    textCapitalization: TextCapitalization.characters,
+                    keyboardType: TextInputType.number,
                     style: TextStyle(
                       color: context.dashlyColors.textPrimary,
                       fontWeight: FontWeight.bold,

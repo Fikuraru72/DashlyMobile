@@ -205,7 +205,7 @@ class _MyEventCardItemState extends State<MyEventCardItem> {
   @override
   void initState() {
     super.initState();
-    _bibController = TextEditingController(text: '');
+    _bibController = TextEditingController(text: widget.event.bibNumber ?? '');
   }
 
   @override
@@ -215,14 +215,24 @@ class _MyEventCardItemState extends State<MyEventCardItem> {
   }
 
   Future<void> _handleEnterRace() async {
-    // 1. Check GPS enabled
+    // 1. Bypass BIB verification if participant is already confirmed/tracking or has verified BIB
+    bool isAlreadyVerified = widget.event.participantState == ParticipantState.confirmed ||
+        widget.event.participantState == ParticipantState.tracking ||
+        (widget.event.bibNumber != null && widget.event.bibNumber!.isNotEmpty);
+
+    if (isAlreadyVerified) {
+      showTrackingModeSelectionDialog(context, eventId: widget.event.id, eventName: widget.event.name);
+      return;
+    }
+
+    // 2. Check GPS enabled
     bool gpsEnabled = await Geolocator.isLocationServiceEnabled();
     if (!gpsEnabled && mounted) {
       await GpsStatusBanner.checkAndShowPopup(context);
       return;
     }
 
-    // 2. Read BIB input
+    // 3. Read BIB input
     final inputBib = _bibController.text.trim();
     if (inputBib.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -364,7 +374,7 @@ class _MyEventCardItemState extends State<MyEventCardItem> {
             const SizedBox(height: 14),
             TextField(
               controller: _bibController,
-              textCapitalization: TextCapitalization.characters,
+              keyboardType: TextInputType.number,
               style: TextStyle(
                 color: context.dashlyColors.textPrimary,
                 fontWeight: FontWeight.bold,
