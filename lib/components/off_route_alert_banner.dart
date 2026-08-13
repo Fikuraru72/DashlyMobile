@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// ════════════════════════════════════════════════════════════════
-/// OffRouteAlertBanner — Sleek Pulsing Alert badge matching TO DESTINATION size
+/// OffRouteAlertBanner — Compact Pulsing Alert badge matching TO DESTINATION size
 /// ════════════════════════════════════════════════════════════════
 class OffRouteAlertBanner extends StatefulWidget {
   final bool isOffRoute;
@@ -35,7 +35,7 @@ class _OffRouteAlertBannerState extends State<OffRouteAlertBanner>
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
 
-    _glowAnimation = Tween<double>(begin: 4.0, end: 14.0).animate(
+    _glowAnimation = Tween<double>(begin: 3.0, end: 10.0).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
   }
@@ -58,16 +58,16 @@ class _OffRouteAlertBannerState extends State<OffRouteAlertBanner>
         return Transform.scale(
           scale: _scaleAnimation.value,
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               color: const Color(0xFF1E0707).withValues(alpha: 0.95),
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: Colors.redAccent, width: 1.2),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.redAccent, width: 1.0),
               boxShadow: [
                 BoxShadow(
                   color: Colors.red.withValues(alpha: 0.45),
                   blurRadius: _glowAnimation.value,
-                  offset: const Offset(0, 4),
+                  offset: const Offset(0, 2),
                 ),
               ],
             ),
@@ -81,28 +81,28 @@ class _OffRouteAlertBannerState extends State<OffRouteAlertBanner>
                     Icon(
                       Icons.warning_amber_rounded,
                       color: Colors.redAccent,
-                      size: 15,
+                      size: 12,
                     ),
-                    SizedBox(width: 5),
+                    SizedBox(width: 4),
                     Text(
                       "OFF COURSE WARNING",
                       style: TextStyle(
                         color: Colors.redAccent,
-                        fontSize: 10,
+                        fontSize: 8.5,
                         fontWeight: FontWeight.w900,
-                        letterSpacing: 1.2,
+                        letterSpacing: 1.0,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: 2),
                 Text(
                   "+${roundedDist} M OFF",
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 26,
+                    fontSize: 17,
                     fontWeight: FontWeight.w900,
-                    letterSpacing: 0.8,
+                    letterSpacing: 0.6,
                   ),
                 ),
               ],

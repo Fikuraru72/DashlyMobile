@@ -430,7 +430,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
                     final polyline = GeoUtils.parseGeoJsonCoordinates(currentEvent?.routeGeojson);
                     return GeoUtils.isOffRoute(tracker.currentPosition, polyline, thresholdMeters: 40.0);
                   }()) ...[
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 5),
                     OffRouteAlertBanner(
                       isOffRoute: true,
                       offRouteDistanceMeters: GeoUtils.minDistanceToPolyline(
@@ -595,16 +595,16 @@ class _TrackingScreenState extends State<TrackingScreen> {
 
   Widget _buildToDestinationBadge(double remainingKm) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
         color: context.dashlyColors.surface.withValues(alpha: 0.95),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: context.dashlyColors.accent.withValues(alpha: 0.7), width: 1.2),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: context.dashlyColors.accent.withValues(alpha: 0.7), width: 1.0),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.45),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.35),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -618,28 +618,28 @@ class _TrackingScreenState extends State<TrackingScreen> {
               Icon(
                 Icons.flag_rounded,
                 color: context.dashlyColors.accent,
-                size: 15,
+                size: 12,
               ),
-              const SizedBox(width: 5),
+              const SizedBox(width: 4),
               Text(
                 "TO DESTINATION",
                 style: TextStyle(
                   color: context.dashlyColors.textHint,
-                  fontSize: 10,
+                  fontSize: 8.5,
                   fontWeight: FontWeight.w900,
-                  letterSpacing: 1.2,
+                  letterSpacing: 1.0,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 3),
+          const SizedBox(height: 2),
           Text(
             "${remainingKm.toStringAsFixed(2)} KM",
             style: TextStyle(
               color: context.dashlyColors.textPrimary,
-              fontSize: 26,
+              fontSize: 17,
               fontWeight: FontWeight.w900,
-              letterSpacing: 0.8,
+              letterSpacing: 0.6,
             ),
           ),
         ],
