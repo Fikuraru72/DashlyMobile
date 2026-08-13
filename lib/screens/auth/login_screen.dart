@@ -66,21 +66,7 @@ class _LoginScreenState extends State<LoginScreen>
     }
   }
 
-  // ✨ GOOGLE AUTH LOGIC — Delegated to AuthProvider/AuthService
-  Future<void> _handleGoogleLogin() async {
-    final auth = context.read<AuthProvider>();
-    
-    final success = await auth.googleLogin();
 
-    if (!mounted) return;
-
-    if (success) {
-      Navigator.of(context).pushReplacementNamed('/home');
-    } else if (auth.errorMessage != null) {
-      // If user cancelled, errorMessage will be null (handled in AuthProvider)
-      _showError(auth.errorMessage!);
-    }
-  }
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -220,59 +206,7 @@ class _LoginScreenState extends State<LoginScreen>
                                     color: Colors.black,
                                   ),
                                 )
-                              : Text('LOGIN'),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-
-                      // ── Divider ────────────────────────────────
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Divider(color: context.dashlyColors.divider),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: Text(
-                              'OR',
-                              style: TextStyle(
-                                color: context.dashlyColors.textHint,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: Divider(color: context.dashlyColors.divider),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-
-                      // ── Google Sign-In Button (✨ UPDATED) ───────────
-                      SizedBox(
-                        width: double.infinity,
-                        height: 52,
-                        child: OutlinedButton.icon(
-                          onPressed: auth.isLoading
-                              ? null
-                              : _handleGoogleLogin, // ✨ Panggil handler Google
-                          icon: auth.isLoading
-                              ? const SizedBox.shrink()
-                              : const Icon(
-                                  Icons.g_mobiledata_rounded,
-                                  size: 32,
-                                ),
-                          label: auth.isLoading
-                              ? const CircularProgressIndicator(strokeWidth: 2)
-                              : Text('Continue with Google'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: context.dashlyColors.textPrimary,
-                            side: BorderSide(
-                              color: context.dashlyColors.divider,
-                              width: 1,
-                            ),
-                          ),
+                              : const Text('LOGIN'),
                         ),
                       ),
                       const SizedBox(height: 32),

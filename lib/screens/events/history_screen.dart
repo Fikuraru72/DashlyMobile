@@ -5,8 +5,10 @@ import '../../models/event_model.dart';
 import '../../theme/dashly_theme.dart';
 import '../tracking/tracking_mode_dialog.dart';
 import '../tracking/race_summary_screen.dart';
+import '../../components/gps_status_banner.dart';
+import '../../providers/event_list_provider.dart';
 import '../../services/offline_storage_service.dart';
-import 'event_detail_screen.dart';
+import 'package:geolocator/geolocator.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -184,184 +186,316 @@ class _HistoryScreenState extends State<HistoryScreen> {
         break;
     }
 
-    return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => EventDetailScreen(event: event),
-        ),
-      ),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: context.dashlyColors.surface,
-          borderRadius: DashlyTheme.radiusMd,
-          border: Border.all(
-            color: isLive ? context.dashlyColors.accent : context.dashlyColors.divider,
-            width: isLive ? 2 : 1,
-          ),
-          boxShadow: isLive ? [BoxShadow(color: context.dashlyColors.accent.withValues(alpha: 0.1), blurRadius: 10)] : null,
-        ),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: context.dashlyColors.surfaceLight,
-                    borderRadius: DashlyTheme.radiusSm,
-                  ),
-                  child: Icon(categoryIcon, color: isLive ? context.dashlyColors.accent : context.dashlyColors.textHint),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        event.name,
-                        style: TextStyle(fontWeight: FontWeight.bold, color: context.dashlyColors.textPrimary, fontSize: 16),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        "${event.dateEvent.day}/${event.dateEvent.month}/${event.dateEvent.year}",
-                        style: TextStyle(color: context.dashlyColors.textHint, fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: statusColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: statusColor),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        isLive 
-                          ? Icons.sensors_rounded 
-                          : (event.status == EventStatus.finished ? Icons.flag_rounded : Icons.schedule_rounded), 
-                        color: statusColor, 
-                        size: 12
-                      ),
-                      const SizedBox(width: 4),
-                      Text(statusText, style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+    return MyEventCardItem(event: event);
+  }
+}
 
-            // Show BIB number if available
-            if (event.bibNumber != null) ...[
-              const SizedBox(height: 12),
+class MyEventCardItem extends StatefulWidget {
+  final Event event;
+  const MyEventCardItem({super.key, required this.event});
+
+  @override
+  State<MyEventCardItem> createState() => _MyEventCardItemState();
+}
+
+class _MyEventCardItemState extends State<MyEventCardItem> {
+  late TextEditingController _bibController;
+  bool _isVerifying = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _bibController = TextEditingController(text: widget.event.bibNumber ?? '');
+  }
+
+  @override
+  void dispose() {
+    _bibController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleEnterRace() async {
+    // 1. Check GPS enabled
+    bool gpsEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!gpsEnabled && mounted) {
+      await GpsStatusBanner.checkAndShowPopup(context);
+      return;
+    }
+
+    // 2. Read BIB input
+    final inputBib = _bibController.text.trim();
+    if (inputBib.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Please enter your BIB number before entering race tracking.'),
+          backgroundColor: context.dashlyColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    // 3. Verify BIB
+    setState(() => _isVerifying = true);
+    try {
+      final res = await context.read<EventListProvider>().verifyBib(widget.event.id, inputBib);
+      if (!mounted) return;
+      if (res['success'] == true) {
+        showTrackingModeSelectionDialog(context, eventId: widget.event.id, eventName: widget.event.name);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(res['message'] ?? 'Invalid BIB number. Please check and try again.'),
+            backgroundColor: context.dashlyColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('BIB verification failed: $e'),
+            backgroundColor: context.dashlyColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isVerifying = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final event = widget.event;
+    Color statusColor;
+    String statusText;
+    IconData categoryIcon = event.category == EventCategory.running
+        ? Icons.directions_run_rounded
+        : Icons.directions_bike_rounded;
+
+    bool isLive = event.status == EventStatus.start;
+    bool isFinished = event.status == EventStatus.finished || event.participantState == ParticipantState.finished;
+
+    switch (event.status) {
+      case EventStatus.start:
+        statusColor = context.dashlyColors.accent;
+        statusText = "LIVE";
+        break;
+      case EventStatus.finished:
+        statusColor = context.dashlyColors.error;
+        statusText = "FINISHED";
+        break;
+      case EventStatus.idle:
+        statusColor = context.dashlyColors.textHint;
+        statusText = "WAITING";
+        break;
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: context.dashlyColors.surface,
+        borderRadius: DashlyTheme.radiusMd,
+        border: Border.all(
+          color: isLive ? context.dashlyColors.accent : context.dashlyColors.divider,
+          width: isLive ? 2 : 1,
+        ),
+        boxShadow: isLive ? [BoxShadow(color: context.dashlyColors.accent.withValues(alpha: 0.1), blurRadius: 10)] : null,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: context.dashlyColors.accent.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: context.dashlyColors.accent.withValues(alpha: 0.2)),
+                  color: context.dashlyColors.surfaceLight,
+                  borderRadius: DashlyTheme.radiusSm,
+                ),
+                child: Icon(categoryIcon, color: isLive ? context.dashlyColors.accent : context.dashlyColors.textHint),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      event.name,
+                      style: TextStyle(fontWeight: FontWeight.bold, color: context.dashlyColors.textPrimary, fontSize: 16),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      "${event.dateEvent.day}/${event.dateEvent.month}/${event.dateEvent.year}",
+                      style: TextStyle(color: context.dashlyColors.textHint, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: statusColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: statusColor),
                 ),
                 child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.badge_rounded, color: context.dashlyColors.accent, size: 18),
-                    const SizedBox(width: 8),
-                    Text("BIB: ", style: TextStyle(color: context.dashlyColors.textSecondary, fontSize: 12)),
-                    Text(event.bibNumber!, style: TextStyle(color: context.dashlyColors.textPrimary, fontWeight: FontWeight.w900, fontSize: 16, letterSpacing: 2)),
+                    Icon(
+                      isLive
+                          ? Icons.sensors_rounded
+                          : (event.status == EventStatus.finished ? Icons.flag_rounded : Icons.schedule_rounded),
+                      color: statusColor,
+                      size: 12,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(statusText, style: TextStyle(color: statusColor, fontSize: 10, fontWeight: FontWeight.bold)),
                   ],
                 ),
               ),
             ],
+          ),
 
-            if (isLive) ...[
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () {
-                  showTrackingModeSelectionDialog(context, eventId: event.id, eventName: event.name);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: context.dashlyColors.accent,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  minimumSize: const Size(double.infinity, 44),
+          if (isLive) ...[
+            const SizedBox(height: 14),
+            TextField(
+              controller: _bibController,
+              textCapitalization: TextCapitalization.characters,
+              style: TextStyle(
+                color: context.dashlyColors.textPrimary,
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+                letterSpacing: 1.5,
+              ),
+              decoration: InputDecoration(
+                labelText: "ENTER BIB NUMBER",
+                hintText: "e.g., 001",
+                hintStyle: TextStyle(color: context.dashlyColors.textHint, letterSpacing: 0),
+                prefixIcon: Icon(Icons.badge_rounded, color: context.dashlyColors.accent),
+                filled: true,
+                fillColor: context.dashlyColors.surfaceLight,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: context.dashlyColors.divider),
                 ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.play_arrow_rounded),
-                    SizedBox(width: 8),
-                    Text("ENTER RACE NOW", style: TextStyle(fontWeight: FontWeight.w900)),
-                  ],
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: context.dashlyColors.accent, width: 2),
                 ),
               ),
-            ] else if (isFinished) ...[
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () async {
-                    final summary = await OfflineStorageService.getRaceSummary(event.id);
-                    if (!context.mounted) return;
-
-                    final Duration elapsed = (summary != null && summary['elapsedDurationSeconds'] != null)
-                        ? Duration(seconds: summary['elapsedDurationSeconds'] as int)
-                        : (event.durationSeconds != null ? Duration(seconds: event.durationSeconds!) : Duration.zero);
-
-                    final double dist = (summary != null && summary['totalDistanceKm'] != null)
-                        ? (summary['totalDistanceKm'] as num).toDouble()
-                        : 0.0;
-
-                    final double avgSpd = (summary != null && summary['avgSpeedKmh'] != null)
-                        ? (summary['avgSpeedKmh'] as num).toDouble()
-                        : (event.avgSpeedKmh ?? 0.0);
-
-                    final double maxSpd = (summary != null && summary['maxSpeedKmh'] != null)
-                        ? (summary['maxSpeedKmh'] as num).toDouble()
-                        : (event.maxSpeedKmh ?? 0.0);
-
-                    final double elev = (summary != null && summary['elevationGainM'] != null)
-                        ? (summary['elevationGainM'] as num).toDouble()
-                        : (event.elevationGainMeters?.toDouble() ?? 0.0);
-
-                    final int rank = summary != null ? (summary['finalRank'] as int? ?? 0) : 0;
-                    final int totalRunners = summary != null ? (summary['totalParticipants'] as int? ?? 0) : 0;
-
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => RaceSummaryScreen(
-                          eventId: event.id,
-                          eventName: event.name,
-                          elapsedDuration: elapsed,
-                          totalDistanceKm: dist,
-                          avgSpeedKmh: avgSpd,
-                          maxSpeedKmh: maxSpd,
-                          elevationGainM: elev,
-                          finalRank: rank,
-                          totalParticipants: totalRunners,
-                          routeGeojson: event.routeGeojson,
-                        ),
-                      ),
-                    );
-                  },
-                  icon: Icon(Icons.emoji_events_rounded, color: context.dashlyColors.accent, size: 18),
-                  label: const Text("VIEW RIDE STATS", style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.0)),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: context.dashlyColors.accent,
-                    side: BorderSide(color: context.dashlyColors.accent),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                ),
+            ),
+            const SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: _isVerifying ? null : _handleEnterRace,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: context.dashlyColors.accent,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                minimumSize: const Size(double.infinity, 44),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-            ],
+              child: _isVerifying
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.play_arrow_rounded),
+                        SizedBox(width: 8),
+                        Text("ENTER RACE NOW", style: TextStyle(fontWeight: FontWeight.w900)),
+                      ],
+                    ),
+            ),
+          ] else if (event.bibNumber != null) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: context.dashlyColors.accent.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: context.dashlyColors.accent.withValues(alpha: 0.2)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.badge_rounded, color: context.dashlyColors.accent, size: 18),
+                  const SizedBox(width: 8),
+                  Text("BIB: ", style: TextStyle(color: context.dashlyColors.textSecondary, fontSize: 12)),
+                  Text(event.bibNumber!, style: TextStyle(color: context.dashlyColors.textPrimary, fontWeight: FontWeight.w900, fontSize: 16, letterSpacing: 2)),
+                ],
+              ),
+            ),
           ],
-        ),
+
+          if (isFinished) ...[
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () async {
+                  final summary = await OfflineStorageService.getRaceSummary(event.id);
+                  if (!context.mounted) return;
+
+                  final Duration elapsed = (summary != null && summary['elapsedDurationSeconds'] != null)
+                      ? Duration(seconds: summary['elapsedDurationSeconds'] as int)
+                      : (event.durationSeconds != null ? Duration(seconds: event.durationSeconds!) : Duration.zero);
+
+                  final double dist = (summary != null && summary['totalDistanceKm'] != null)
+                      ? (summary['totalDistanceKm'] as num).toDouble()
+                      : 0.0;
+
+                  final double avgSpd = (summary != null && summary['avgSpeedKmh'] != null)
+                      ? (summary['avgSpeedKmh'] as num).toDouble()
+                      : (event.avgSpeedKmh ?? 0.0);
+
+                  final double maxSpd = (summary != null && summary['maxSpeedKmh'] != null)
+                      ? (summary['maxSpeedKmh'] as num).toDouble()
+                      : (event.maxSpeedKmh ?? 0.0);
+
+                  final double elev = (summary != null && summary['elevationGainM'] != null)
+                      ? (summary['elevationGainM'] as num).toDouble()
+                      : (event.elevationGainMeters?.toDouble() ?? 0.0);
+
+                  final int rank = summary != null ? (summary['finalRank'] as int? ?? 0) : 0;
+                  final int totalRunners = summary != null ? (summary['totalParticipants'] as int? ?? 0) : 0;
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => RaceSummaryScreen(
+                        eventId: event.id,
+                        eventName: event.name,
+                        elapsedDuration: elapsed,
+                        totalDistanceKm: dist,
+                        avgSpeedKmh: avgSpd,
+                        maxSpeedKmh: maxSpd,
+                        elevationGainM: elev,
+                        finalRank: rank,
+                        totalParticipants: totalRunners,
+                        routeGeojson: event.routeGeojson,
+                      ),
+                    ),
+                  );
+                },
+                icon: Icon(Icons.emoji_events_rounded, color: context.dashlyColors.accent, size: 18),
+                label: const Text("VIEW RIDE STATS", style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.0)),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: context.dashlyColors.accent,
+                  side: BorderSide(color: context.dashlyColors.accent),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

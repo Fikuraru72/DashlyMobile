@@ -9,10 +9,238 @@ import '../../providers/event_provider.dart';
 import '../../theme/dashly_theme.dart';
 import '../tracking/tracking_mode_dialog.dart';
 
+import 'package:geolocator/geolocator.dart';
+import '../../components/gps_status_banner.dart';
+
 class EventDetailScreen extends StatelessWidget {
   final Event event;
 
   const EventDetailScreen({super.key, required this.event});
+
+  Future<void> _handleStartTrackingFlow(BuildContext context, Event event) async {
+    // 1. Check if event tracking is open
+    if (!event.canStartTracking) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: context.dashlyColors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(color: context.dashlyColors.accent.withValues(alpha: 0.5)),
+          ),
+          title: Row(
+            children: [
+              Icon(Icons.schedule_rounded, color: context.dashlyColors.accent, size: 26),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  "RACE NOT STARTED YET",
+                  style: TextStyle(
+                    color: context.dashlyColors.textPrimary,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 15,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            "Tracking for \"${event.name}\" has not been opened by the event organizer yet. Please wait until the official race start window begins.",
+            style: TextStyle(
+              color: context.dashlyColors.textSecondary,
+              fontSize: 13,
+              height: 1.4,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(
+                "OK",
+                style: TextStyle(
+                  color: context.dashlyColors.accent,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    // 2. Check if GPS is enabled
+    bool gpsEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!gpsEnabled && context.mounted) {
+      await GpsStatusBanner.checkAndShowPopup(context);
+      return;
+    }
+
+    // 3. Prompt for BIB number
+    if (!context.mounted) return;
+    final TextEditingController bibController = TextEditingController(
+      text: event.bibNumber ?? '',
+    );
+
+    bool? isBibVerified = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogCtx) {
+        bool isSubmitting = false;
+        String? errorText;
+
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            return AlertDialog(
+              backgroundColor: context.dashlyColors.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+                side: BorderSide(color: context.dashlyColors.accent, width: 1.5),
+              ),
+              title: Row(
+                children: [
+                  Icon(Icons.badge_rounded, color: context.dashlyColors.accent, size: 28),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      "ENTER YOUR BIB NUMBER",
+                      style: TextStyle(
+                        color: context.dashlyColors.textPrimary,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 15,
+                        letterSpacing: 1.0,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Please enter your assigned BIB number to verify your entry for \"${event.name}\":",
+                    style: TextStyle(
+                      color: context.dashlyColors.textSecondary,
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: bibController,
+                    autofocus: true,
+                    textCapitalization: TextCapitalization.characters,
+                    style: TextStyle(
+                      color: context.dashlyColors.textPrimary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      letterSpacing: 1.5,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: "e.g., 001",
+                      hintStyle: TextStyle(
+                        color: context.dashlyColors.textHint,
+                        letterSpacing: 0,
+                      ),
+                      errorText: errorText,
+                      filled: true,
+                      fillColor: context.dashlyColors.surfaceLight,
+                      prefixIcon: Icon(Icons.numbers_rounded, color: context.dashlyColors.accent),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(color: context.dashlyColors.divider),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(color: context.dashlyColors.accent, width: 2),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              actions: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: isSubmitting ? null : () => Navigator.pop(dialogCtx, false),
+                        style: OutlinedButton.styleFrom(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          side: BorderSide(color: context.dashlyColors.divider),
+                        ),
+                        child: const Text("CANCEL"),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: isSubmitting
+                            ? null
+                            : () async {
+                                final inputBib = bibController.text.trim();
+                                if (inputBib.isEmpty) {
+                                  setDialogState(() {
+                                    errorText = "BIB number is required";
+                                  });
+                                  return;
+                                }
+
+                                setDialogState(() {
+                                  isSubmitting = true;
+                                  errorText = null;
+                                });
+
+                                try {
+                                  final res = await context
+                                      .read<EventListProvider>()
+                                      .verifyBib(event.id, inputBib);
+
+                                  if (res['success'] == true) {
+                                    if (context.mounted) {
+                                      Navigator.pop(dialogCtx, true);
+                                    }
+                                  } else {
+                                    setDialogState(() {
+                                      isSubmitting = false;
+                                      errorText = res['message'] ?? "Invalid BIB number";
+                                    });
+                                  }
+                                } catch (e) {
+                                  setDialogState(() {
+                                    isSubmitting = false;
+                                    errorText = "Verification failed: $e";
+                                  });
+                                }
+                              },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: context.dashlyColors.accent,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        ),
+                        child: isSubmitting
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              )
+                            : const Text("VERIFY"),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (isBibVerified == true && context.mounted) {
+      showTrackingModeSelectionDialog(context, eventId: event.id, eventName: event.name);
+    }
+  }
 
   Future<void> _openMaps(BuildContext context, double? lat, double? lng) async {
     if (lat == null || lng == null) {
@@ -408,7 +636,7 @@ class EventDetailScreen extends StatelessWidget {
     // Already registered -> Enter Race
     return ElevatedButton(
       onPressed: () {
-        showTrackingModeSelectionDialog(context, eventId: event.id, eventName: event.name);
+        _handleStartTrackingFlow(context, event);
       },
       style: ElevatedButton.styleFrom(
         backgroundColor: context.dashlyColors.accent,

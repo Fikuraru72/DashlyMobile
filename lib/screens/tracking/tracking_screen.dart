@@ -14,6 +14,8 @@ import 'race_summary_screen.dart';
 import '../../services/offline_storage_service.dart';
 import '../../core/utils/geo_utils.dart';
 import '../../models/event_model.dart';
+import 'package:geolocator/geolocator.dart';
+import '../../components/gps_status_banner.dart';
 
 class TrackingScreen extends StatefulWidget {
   final int eventId;
@@ -39,6 +41,8 @@ class _TrackingScreenState extends State<TrackingScreen> {
   Timer? _sosTimer;
   bool _isMetricsPanelCollapsed = false;
   bool _hasAutoFinished = false;
+  StreamSubscription<ServiceStatus>? _gpsStatusSubscription;
+  Timer? _gpsCheckTimer;
 
   @override
   void initState() {
@@ -51,7 +55,22 @@ class _TrackingScreenState extends State<TrackingScreen> {
       }
     });
 
+    // Listen continuously to GPS location service toggles during tracking
+    _gpsStatusSubscription = Geolocator.getServiceStatusStream().listen((status) {
+      if (status == ServiceStatus.disabled && mounted) {
+        GpsStatusBanner.checkAndShowPopup(context);
+      }
+    });
+
+    _gpsCheckTimer = Timer.periodic(const Duration(seconds: 8), (_) async {
+      final enabled = await Geolocator.isLocationServiceEnabled();
+      if (!enabled && mounted) {
+        GpsStatusBanner.checkAndShowPopup(context);
+      }
+    });
+
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      GpsStatusBanner.checkAndShowPopup(context);
       context.read<EventProvider>().fetchEvent(widget.eventId);
       
       final tracker = context.read<TrackingProvider>();
@@ -71,6 +90,8 @@ class _TrackingScreenState extends State<TrackingScreen> {
 
   @override
   void dispose() {
+    _gpsStatusSubscription?.cancel();
+    _gpsCheckTimer?.cancel();
     _timer.cancel();
     _stopwatch.stop();
     _sosTimer?.cancel();

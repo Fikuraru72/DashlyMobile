@@ -13,6 +13,9 @@ import '../../services/offline_storage_service.dart';
 import '../../core/utils/geo_utils.dart';
 import '../../models/event_model.dart';
 
+import 'package:geolocator/geolocator.dart';
+import '../../components/gps_status_banner.dart';
+
 /// ════════════════════════════════════════════════════════════════
 /// StatsTrackingScreen — Standalone Battery Saver Mode (No Map)
 /// ════════════════════════════════════════════════════════════════
@@ -42,6 +45,8 @@ class _StatsTrackingScreenState extends State<StatsTrackingScreen> {
   double _sosProgress = 0.0;
   Timer? _sosTimer;
   bool _hasAutoFinished = false;
+  StreamSubscription<ServiceStatus>? _gpsStatusSubscription;
+  Timer? _gpsCheckTimer;
 
   @override
   void initState() {
@@ -54,7 +59,21 @@ class _StatsTrackingScreenState extends State<StatsTrackingScreen> {
       }
     });
 
+    _gpsStatusSubscription = Geolocator.getServiceStatusStream().listen((status) {
+      if (status == ServiceStatus.disabled && mounted) {
+        GpsStatusBanner.checkAndShowPopup(context);
+      }
+    });
+
+    _gpsCheckTimer = Timer.periodic(const Duration(seconds: 8), (_) async {
+      final enabled = await Geolocator.isLocationServiceEnabled();
+      if (!enabled && mounted) {
+        GpsStatusBanner.checkAndShowPopup(context);
+      }
+    });
+
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      GpsStatusBanner.checkAndShowPopup(context);
       context.read<EventProvider>().fetchEvent(widget.eventId);
       
       // Auto start tracking telemetry if not already running
@@ -75,6 +94,8 @@ class _StatsTrackingScreenState extends State<StatsTrackingScreen> {
 
   @override
   void dispose() {
+    _gpsStatusSubscription?.cancel();
+    _gpsCheckTimer?.cancel();
     _timer.cancel();
     _stopwatch.stop();
     _sosTimer?.cancel();

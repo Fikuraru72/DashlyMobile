@@ -50,7 +50,7 @@ void main() {
       // Arrange
       when(() => mockMqttService.connect(1, 2)).thenAnswer((_) async => true);
       when(() => mockMqttService.setTrackingActive(true)).thenReturn(null);
-      when(() => mockMqttService.publishStatus('ONLINE')).thenReturn(null);
+      when(() => mockMqttService.publishStatus('ONLINE')).thenAnswer((_) async {});
       
       when(() => mockLocationService.startTracking(
             eventId: 1,
@@ -79,7 +79,7 @@ void main() {
       // Arrange
       when(() => mockMqttService.setTrackingActive(false)).thenReturn(null);
       when(() => mockLocationService.stopTracking()).thenAnswer((_) async {});
-      when(() => mockMqttService.publishStatus('OFFLINE')).thenReturn(null);
+      when(() => mockMqttService.publishStatus('OFFLINE')).thenAnswer((_) async {});
       when(() => mockMqttService.disconnect()).thenReturn(null);
 
       // Act
@@ -98,7 +98,7 @@ void main() {
       // First, simulate starting tracking and receiving a position
       when(() => mockMqttService.connect(1, 2)).thenAnswer((_) async => true);
       when(() => mockMqttService.setTrackingActive(true)).thenReturn(null);
-      when(() => mockMqttService.publishStatus('ONLINE')).thenReturn(null);
+      when(() => mockMqttService.publishStatus('ONLINE')).thenAnswer((_) async {});
       
       Function? capturedCallback;
       when(() => mockLocationService.startTracking(
