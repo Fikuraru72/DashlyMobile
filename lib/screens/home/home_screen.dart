@@ -73,9 +73,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final eventProvider = context.watch<EventProvider>();
     final user = auth.currentUser;
 
-    // Find active event (exclude finished events)
+    // Find active event (events where organizer status is not finished)
     final activeEvents = eventProvider.myEvents.where((e) => 
-      e.participantState != ParticipantState.finished &&
       e.status != EventStatus.finished
     ).toList()
       ..sort((a, b) => b.dateEvent.compareTo(a.dateEvent));
@@ -611,13 +610,155 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _showFinishedEventOptionsDialog(BuildContext context, Event event) async {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: context.dashlyColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  event.name,
+                  style: TextStyle(
+                    color: context.dashlyColors.textPrimary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  "You have finished tracking for this event. Choose an option below:",
+                  style: TextStyle(
+                    color: context.dashlyColors.textSecondary,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton.icon(
+                    onPressed: () async {
+                      Navigator.pop(ctx);
+                      final summary = await OfflineStorageService.getRaceSummary(event.id);
+                      if (!context.mounted) return;
+
+                      final Duration elapsed = (summary != null && summary['elapsedDurationSeconds'] != null)
+                          ? Duration(seconds: summary['elapsedDurationSeconds'] as int)
+                          : (event.durationSeconds != null ? Duration(seconds: event.durationSeconds!) : Duration.zero);
+
+                      final double dist = (summary != null && summary['totalDistanceKm'] != null)
+                          ? (summary['totalDistanceKm'] as num).toDouble()
+                          : 0.0;
+
+                      final double avgSpd = (summary != null && summary['avgSpeedKmh'] != null)
+                          ? (summary['avgSpeedKmh'] as num).toDouble()
+                          : (event.avgSpeedKmh ?? 0.0);
+
+                      final double maxSpd = (summary != null && summary['maxSpeedKmh'] != null)
+                          ? (summary['maxSpeedKmh'] as num).toDouble()
+                          : (event.maxSpeedKmh ?? 0.0);
+
+                      final double elev = (summary != null && summary['elevationGainM'] != null)
+                          ? (summary['elevationGainM'] as num).toDouble()
+                          : (event.elevationGainMeters?.toDouble() ?? 0.0);
+
+                      final int rank = summary != null ? (summary['finalRank'] as int? ?? 0) : 0;
+                      final int totalRunners = summary != null ? (summary['totalParticipants'] as int? ?? 0) : 0;
+
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => RaceSummaryScreen(
+                            eventId: event.id,
+                            eventName: event.name,
+                            elapsedDuration: elapsed,
+                            totalDistanceKm: dist,
+                            avgSpeedKmh: avgSpd,
+                            maxSpeedKmh: maxSpd,
+                            elevationGainM: elev,
+                            finalRank: rank,
+                            totalParticipants: totalRunners,
+                            routeGeojson: event.routeGeojson,
+                          ),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.emoji_events_rounded),
+                    label: const Text("VIEW RIDE STATS", style: TextStyle(fontWeight: FontWeight.bold)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: context.dashlyColors.accent,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      _handleStartTrackingFlow(context, event);
+                    },
+                    icon: const Icon(Icons.replay_rounded),
+                    label: const Text("RE-ENTER RACE TRACKING", style: TextStyle(fontWeight: FontWeight.bold)),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: context.dashlyColors.textPrimary,
+                      side: BorderSide(color: context.dashlyColors.divider),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildActiveEventCard(BuildContext context, Event event) {
     final tracker = context.watch<TrackingProvider>();
     bool isTracking = tracker.isTracking && tracker.activeEventId == event.id;
+    bool isFinishedParticipant = event.participantState == ParticipantState.finished || _summariesMap.containsKey(event.id);
+
+    String statusBadgeText;
+    Color badgeColor = context.dashlyColors.accent;
+
+    if (isTracking) {
+      statusBadgeText = "LIVE TRACKING ACTIVE";
+    } else if (isFinishedParticipant) {
+      statusBadgeText = "RACE FINISHED";
+      badgeColor = context.dashlyColors.accent;
+    } else {
+      statusBadgeText = "READY TO TRACK";
+    }
+
+    String subtitleText;
+    if (isTracking) {
+      subtitleText = "Tap to continue tracking";
+    } else if (isFinishedParticipant) {
+      subtitleText = "Tap to view ride stats or re-enter race tracking";
+    } else {
+      subtitleText = "Tap to verify BIB and start race tracking";
+    }
+
     return GestureDetector(
       onTap: () {
         if (isTracking) {
           showTrackingModeSelectionDialog(context, eventId: event.id, eventName: event.name);
+        } else if (isFinishedParticipant) {
+          _showFinishedEventOptionsDialog(context, event);
         } else {
           _handleStartTrackingFlow(context, event);
         }
@@ -640,17 +781,21 @@ class _HomeScreenState extends State<HomeScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: context.dashlyColors.accent.withValues(alpha: 0.1),
+                    color: badgeColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: context.dashlyColors.accent),
+                    border: Border.all(color: badgeColor),
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.sensors_rounded, color: context.dashlyColors.accent, size: 14),
+                      Icon(
+                        isFinishedParticipant ? Icons.emoji_events_rounded : Icons.sensors_rounded,
+                        color: badgeColor,
+                        size: 14,
+                      ),
                       const SizedBox(width: 6),
                       Text(
-                        isTracking ? "LIVE TRACKING ACTIVE" : "READY TO TRACK",
-                        style: TextStyle(color: context.dashlyColors.accent, fontSize: 10, fontWeight: FontWeight.bold),
+                        statusBadgeText,
+                        style: TextStyle(color: badgeColor, fontSize: 10, fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
@@ -668,7 +813,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              isTracking ? "Tap to continue tracking" : "Tap to verify BIB and start race tracking",
+              subtitleText,
               style: TextStyle(color: context.dashlyColors.textHint, fontSize: 14),
             ),
           ],
