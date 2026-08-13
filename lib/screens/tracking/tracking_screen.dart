@@ -438,7 +438,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
               return GeoUtils.isOffRoute(tracker.currentPosition, polyline, thresholdMeters: 40.0);
             }())
               Positioned(
-                top: MediaQuery.of(context).padding.top + 115,
+                top: MediaQuery.of(context).padding.top + 105,
                 left: 0,
                 right: 0,
                 child: OffRouteAlertBanner(
