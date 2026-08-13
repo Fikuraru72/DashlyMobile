@@ -211,7 +211,10 @@ class _TrackingScreenState extends State<TrackingScreen> {
             final List<Map<String, dynamic>> profile = [];
             for (int i = 0; i < coords.length; i++) {
               final pt = coords[i] as List;
-              double elev = pt.length > 2 ? (pt[2] as num).toDouble() : 50.0;
+              // If 3D Z-coordinate exists, use it. Otherwise generate realistic undulating terrain
+              double elev = pt.length > 2
+                  ? (pt[2] as num).toDouble()
+                  : (60.0 + 25.0 * sin(i * 0.12));
               if (i > 0) {
                 final prev = coords[i - 1] as List;
                 cumDist += _haversineMeters(

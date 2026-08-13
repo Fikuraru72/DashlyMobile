@@ -174,17 +174,31 @@ class TrackingProvider extends ChangeNotifier {
             _avgSpeed = speedKmH;
           }
 
-          // Calculate elevation gain
+  final List<double> _altitudeWindow = [];
+
+  double _filterAltitude(double rawAltitude) {
+    if (rawAltitude == 0) return _lastAltitude != -9999.0 ? _lastAltitude : 0.0;
+    _altitudeWindow.add(rawAltitude);
+    if (_altitudeWindow.length > 5) {
+      _altitudeWindow.removeAt(0);
+    }
+    return _altitudeWindow.reduce((a, b) => a + b) / _altitudeWindow.length;
+  }
+
+          // Calculate smoothed elevation gain with Moving Average Filter & 2.5m Noise Threshold
           if (pos.altitude != 0) {
+            double smoothedAlt = _filterAltitude(pos.altitude);
             if (_lastAltitude != -9999.0) {
-              double altDiff = pos.altitude - _lastAltitude;
-              if (altDiff > 1.0) { // threshold 1m
+              double altDiff = smoothedAlt - _lastAltitude;
+              if (altDiff >= 2.5) { // 2.5m noise threshold to prevent GPS jitter accumulation
                 _elevationGain += altDiff;
                 final prefs = await SharedPreferences.getInstance();
                 await prefs.setDouble(savedAltKey, _elevationGain);
+                _lastAltitude = smoothedAlt;
               }
+            } else {
+              _lastAltitude = smoothedAlt;
             }
-            _lastAltitude = pos.altitude;
           }
 
           _currentPosition = newPos;
