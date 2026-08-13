@@ -445,20 +445,9 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
-    // 2b. If participant is ALREADY confirmed or tracking, launch tracking selection directly!
-    if (event.participantState == ParticipantState.confirmed ||
-        event.participantState == ParticipantState.tracking) {
-      if (context.mounted) {
-        showTrackingModeSelectionDialog(context, eventId: event.id, eventName: event.name);
-      }
-      return;
-    }
-
-    // 3. Prompt for BIB number (Req 3)
+    // 3. Prompt for BIB number (Req 3 - Default field empty)
     if (!context.mounted) return;
-    final TextEditingController bibController = TextEditingController(
-      text: event.bibNumber ?? '',
-    );
+    final TextEditingController bibController = TextEditingController(text: '');
 
     bool? isBibVerified = await showDialog<bool>(
       context: context,

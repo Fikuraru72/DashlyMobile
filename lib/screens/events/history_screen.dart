@@ -205,7 +205,7 @@ class _MyEventCardItemState extends State<MyEventCardItem> {
   @override
   void initState() {
     super.initState();
-    _bibController = TextEditingController(text: widget.event.bibNumber ?? '');
+    _bibController = TextEditingController(text: '');
   }
 
   @override
