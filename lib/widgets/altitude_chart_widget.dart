@@ -31,9 +31,21 @@ class _AltitudeChartWidgetState extends State<AltitudeChartWidget> {
     double minElev = double.infinity;
     double maxDist = 0;
 
+    // Auto-detect if altitudeProfile distance is specified in KM (< 200) vs Meters (> 200)
+    double rawMaxDist = 0;
     for (var pt in widget.altitudeProfile) {
-      double dist = (pt['distance'] as num).toDouble();
-      double elev = (pt['elevation'] as num).toDouble();
+      if (pt is Map && pt['distance'] != null) {
+        double d = (pt['distance'] as num).toDouble();
+        if (d > rawMaxDist) rawMaxDist = d;
+      }
+    }
+    final bool isProfileInKm = rawMaxDist > 0 && rawMaxDist < 200.0;
+
+    for (var pt in widget.altitudeProfile) {
+      if (pt is! Map) continue;
+      double dist = ((pt['distance'] ?? 0) as num).toDouble();
+      if (isProfileInKm) dist *= 1000.0; // Auto-convert KM to meters
+      double elev = ((pt['elevation'] ?? 0) as num).toDouble();
       spots.add(FlSpot(dist, elev));
       if (elev > maxElev) maxElev = elev;
       if (elev < minElev) minElev = elev;
@@ -41,6 +53,10 @@ class _AltitudeChartWidgetState extends State<AltitudeChartWidget> {
     }
 
     if (maxElev == 0 && minElev == double.infinity) return const SizedBox.shrink();
+    if (minElev == maxElev) {
+      minElev = (minElev - 10 < 0) ? 0 : (minElev - 10);
+      maxElev += 20;
+    }
 
     final double totalDist = maxDist > 0 ? maxDist : 1000.0;
 
