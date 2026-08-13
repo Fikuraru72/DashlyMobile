@@ -57,6 +57,13 @@ class EventService {
     } on DioException catch (e) {
       final message = e.response?.data?['message'] ?? 'Failed to verify BIB';
       print('EventService: Failed to verify BIB for event $eventId: $message');
+      
+      // If backend returns 409 Conflict or "already verified", treat as success
+      if (e.response?.statusCode == 409 ||
+          message.toString().toLowerCase().contains('already verified')) {
+        return {'success': true, 'message': 'BIB is already verified'};
+      }
+
       return {'success': false, 'message': message};
     }
   }

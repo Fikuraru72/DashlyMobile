@@ -445,6 +445,15 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
+    // 2b. If participant is ALREADY confirmed or tracking, launch tracking selection directly!
+    if (event.participantState == ParticipantState.confirmed ||
+        event.participantState == ParticipantState.tracking) {
+      if (context.mounted) {
+        showTrackingModeSelectionDialog(context, eventId: event.id, eventName: event.name);
+      }
+      return;
+    }
+
     // 3. Prompt for BIB number (Req 3)
     if (!context.mounted) return;
     final TextEditingController bibController = TextEditingController(
@@ -565,7 +574,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                       .read<EventListProvider>()
                                       .verifyBib(event.id, inputBib);
 
-                                  if (res['success'] == true) {
+                                  final msg = res['message']?.toString().toLowerCase() ?? '';
+                                  if (res['success'] == true || msg.contains('already verified')) {
                                     if (context.mounted) {
                                       Navigator.pop(dialogCtx, true);
                                     }
