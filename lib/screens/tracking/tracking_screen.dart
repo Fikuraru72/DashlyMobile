@@ -417,11 +417,30 @@ class _TrackingScreenState extends State<TrackingScreen> {
               child: _buildHeaderPill(tracker, currentEvent),
             ),
 
-            // 3. TOP LEFT TO DESTINATION BADGE
+            // 3. TOP LEFT BADGES (TO DESTINATION & OFF COURSE WARNING BELOW IT)
             Positioned(
               top: MediaQuery.of(context).padding.top + 65,
               left: 16,
-              child: _buildToDestinationBadge(remainingKm),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildToDestinationBadge(remainingKm),
+                  if (() {
+                    final polyline = GeoUtils.parseGeoJsonCoordinates(currentEvent?.routeGeojson);
+                    return GeoUtils.isOffRoute(tracker.currentPosition, polyline, thresholdMeters: 40.0);
+                  }()) ...[
+                    const SizedBox(height: 8),
+                    OffRouteAlertBanner(
+                      isOffRoute: true,
+                      offRouteDistanceMeters: GeoUtils.minDistanceToPolyline(
+                        tracker.currentPosition!,
+                        GeoUtils.parseGeoJsonCoordinates(currentEvent?.routeGeojson),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
 
             // 4. FLOATING CIRCULAR SOS BUTTON (Top Right below Header Pill)
@@ -432,25 +451,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
                 child: _buildFloatingSosButton(tracker),
               ),
 
-            // 4b. OFF-ROUTE PULSING ALERT BANNER
-            if (() {
-              final polyline = GeoUtils.parseGeoJsonCoordinates(currentEvent?.routeGeojson);
-              return GeoUtils.isOffRoute(tracker.currentPosition, polyline, thresholdMeters: 40.0);
-            }())
-              Positioned(
-                top: MediaQuery.of(context).padding.top + 105,
-                left: 0,
-                right: 0,
-                child: OffRouteAlertBanner(
-                  isOffRoute: true,
-                  offRouteDistanceMeters: GeoUtils.minDistanceToPolyline(
-                    tracker.currentPosition!,
-                    GeoUtils.parseGeoJsonCoordinates(currentEvent?.routeGeojson),
-                  ),
-                ),
-              ),
-
-            // 4. DOCKED BOTTOM PANEL (STATISTIK - MENEMPEL DI BAWAH)
+            // 5. DOCKED BOTTOM PANEL (STATISTIK - MENEMPEL DI BAWAH)
             Positioned(
               left: 0,
               right: 0,
