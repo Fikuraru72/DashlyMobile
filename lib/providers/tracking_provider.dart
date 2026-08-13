@@ -34,6 +34,15 @@ class TrackingProvider extends ChangeNotifier {
   double get totalDistance => _totalDistance;
   double get avgSpeed => _avgSpeed;
   double get elevationGain => _elevationGain;
+  double get currentAltitude {
+    if (_lastGpsPosition != null && _lastGpsPosition!.altitude >= 0) {
+      return _lastGpsPosition!.altitude;
+    }
+    if (_lastAltitude != -9999.0 && _lastAltitude >= 0) {
+      return _lastAltitude;
+    }
+    return 0.0;
+  }
   int get currentRank => _currentRank;
   int get totalParticipants => _totalParticipants;
   List<Map<String, dynamic>> get otherRunners => _otherRunners;

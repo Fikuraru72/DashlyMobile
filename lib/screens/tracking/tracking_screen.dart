@@ -816,22 +816,22 @@ class _TrackingScreenState extends State<TrackingScreen> {
 
           const SizedBox(height: 10),
 
-          // 3 HERO METRICS ROW: DURATION | DISTANCE | ELEV GAIN
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              ValueListenableBuilder<Duration>(
-                valueListenable: _elapsedNotifier,
-                builder: (context, elapsed, _) {
-                  return _buildHeroMetricItem("DURATION", _formatDuration(elapsed), "");
-                },
+              // 3 HERO METRICS ROW: DURATION | DISTANCE | ALTITUDE
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  ValueListenableBuilder<Duration>(
+                    valueListenable: _elapsedNotifier,
+                    builder: (context, elapsed, _) {
+                      return _buildHeroMetricItem("DURATION", _formatDuration(elapsed), "");
+                    },
+                  ),
+                  _buildHeroMetricDivider(),
+                  _buildHeroMetricItem("DISTANCE", tracker.totalDistance.toStringAsFixed(2), "KM"),
+                  _buildHeroMetricDivider(),
+                  _buildHeroMetricItem("ALTITUDE", tracker.currentAltitude.toStringAsFixed(0), "M"),
+                ],
               ),
-              _buildHeroMetricDivider(),
-              _buildHeroMetricItem("DISTANCE", tracker.totalDistance.toStringAsFixed(2), "KM"),
-              _buildHeroMetricDivider(),
-              _buildHeroMetricItem("ELEV GAIN", tracker.elevationGain.toStringAsFixed(0), "M"),
-            ],
-          ),
 
           if (!_isMetricsPanelCollapsed) ...[
             const SizedBox(height: 12),

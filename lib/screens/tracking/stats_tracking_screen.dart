@@ -654,7 +654,7 @@ class _StatsTrackingScreenState extends State<StatsTrackingScreen> {
               _buildHeroMetricDivider(),
               _buildHeroMetricItem("DISTANCE", tracker.totalDistance.toStringAsFixed(2), "KM"),
               _buildHeroMetricDivider(),
-              _buildHeroMetricItem("ELEV GAIN", tracker.elevationGain.toStringAsFixed(0), "M"),
+              _buildHeroMetricItem("ALTITUDE", tracker.currentAltitude.toStringAsFixed(0), "M"),
             ],
           ),
         ],
