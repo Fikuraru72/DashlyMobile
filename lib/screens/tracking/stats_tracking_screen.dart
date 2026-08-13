@@ -587,16 +587,10 @@ class _StatsTrackingScreenState extends State<StatsTrackingScreen> {
 
   Widget _buildHeroSpeedCard(TrackingProvider tracker, double avgSpeed) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            context.dashlyColors.surface,
-            context.dashlyColors.surfaceLight,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: context.dashlyColors.surface,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: context.dashlyColors.accent.withValues(alpha: 0.3)),
         boxShadow: DashlyTheme.glowShadow(
@@ -604,59 +598,19 @@ class _StatsTrackingScreenState extends State<StatsTrackingScreen> {
           blur: 24,
         ),
       ),
-      child: Column(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          Text(
-            "LIVE SPEED",
-            style: TextStyle(
-              color: context.dashlyColors.textSecondary,
-              fontWeight: FontWeight.bold,
-              fontSize: 11,
-              letterSpacing: 1.5,
-            ),
+          ValueListenableBuilder<Duration>(
+            valueListenable: _elapsedNotifier,
+            builder: (context, elapsed, _) {
+              return _buildHeroMetricItem("DURATION", _formatDuration(elapsed), "");
+            },
           ),
-          const SizedBox(height: 4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text(
-                tracker.currentSpeed.toStringAsFixed(1),
-                style: TextStyle(
-                  color: context.dashlyColors.accent,
-                  fontSize: 56,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -1,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                "KM/H",
-                style: TextStyle(
-                  color: context.dashlyColors.textSecondary,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          const Divider(height: 20, color: Colors.white10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              ValueListenableBuilder<Duration>(
-                valueListenable: _elapsedNotifier,
-                builder: (context, elapsed, _) {
-                  return _buildHeroMetricItem("DURATION", _formatDuration(elapsed), "");
-                },
-              ),
-              _buildHeroMetricDivider(),
-              _buildHeroMetricItem("DISTANCE", tracker.totalDistance.toStringAsFixed(2), "KM"),
-              _buildHeroMetricDivider(),
-              _buildHeroMetricItem("ALTITUDE", tracker.currentAltitude.toStringAsFixed(0), "M"),
-            ],
-          ),
+          _buildHeroMetricDivider(),
+          _buildHeroMetricItem("DISTANCE", tracker.totalDistance.toStringAsFixed(2), "KM"),
+          _buildHeroMetricDivider(),
+          _buildHeroMetricItem("ALTITUDE", tracker.currentAltitude.toStringAsFixed(0), "M"),
         ],
       ),
     );
