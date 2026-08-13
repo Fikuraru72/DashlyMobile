@@ -371,6 +371,20 @@ class _StatsTrackingScreenState extends State<StatsTrackingScreen> {
         : (elapsedHours > 0 ? (tracker.totalDistance / elapsedHours) : 0.0);
     final altitudeProfile = _getEffectiveAltitudeProfile(eventProvider);
 
+    double totalRouteKm = 0.0;
+    if (currentEvent?.totalDistanceMeters != null && currentEvent!.totalDistanceMeters! > 0) {
+      totalRouteKm = currentEvent.totalDistanceMeters! / 1000.0;
+    } else if (altitudeProfile.isNotEmpty) {
+      final lastPt = altitudeProfile.last;
+      if (lastPt is Map && lastPt['distance'] != null) {
+        totalRouteKm = (lastPt['distance'] as num).toDouble() / 1000.0;
+      }
+    }
+
+    final double remainingKm = totalRouteKm > tracker.totalDistance
+        ? (totalRouteKm - tracker.totalDistance)
+        : 0.0;
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
@@ -409,8 +423,8 @@ class _StatsTrackingScreenState extends State<StatsTrackingScreen> {
                 ),
                 const SizedBox(height: 12),
 
-                // Hero Speedometer & 3 Key Telemetry Metrics Card
-                _buildHeroSpeedCard(tracker, avgSpeed),
+                // 2x2 Enlarged Telemetry Grid Card (Duration | To Destination / Distance | Altitude)
+                _buildBigStatsCard(tracker, remainingKm),
                 const SizedBox(height: 16),
 
                 // Altitude Chart directly below Telemetry Metrics
@@ -585,34 +599,144 @@ class _StatsTrackingScreenState extends State<StatsTrackingScreen> {
     );
   }
 
-  Widget _buildHeroSpeedCard(TrackingProvider tracker, double avgSpeed) {
+  Widget _buildBigStatsCard(TrackingProvider tracker, double remainingKm) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
       decoration: BoxDecoration(
         color: context.dashlyColors.surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: context.dashlyColors.accent.withValues(alpha: 0.3)),
+        border: Border.all(color: context.dashlyColors.accent.withValues(alpha: 0.3), width: 1.5),
         boxShadow: DashlyTheme.glowShadow(
-          color: context.dashlyColors.accent.withValues(alpha: 0.08),
+          color: context.dashlyColors.accent.withValues(alpha: 0.1),
           blur: 24,
         ),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
+      child: Column(
         children: [
-          ValueListenableBuilder<Duration>(
-            valueListenable: _elapsedNotifier,
-            builder: (context, elapsed, _) {
-              return _buildHeroMetricItem("DURATION", _formatDuration(elapsed), "");
-            },
+          // ROW 1: DURATION | TO DESTINATION
+          Row(
+            children: [
+              Expanded(
+                child: ValueListenableBuilder<Duration>(
+                  valueListenable: _elapsedNotifier,
+                  builder: (context, elapsed, _) {
+                    return _buildLargeMetricItem(
+                      "DURATION",
+                      _formatDuration(elapsed),
+                      "",
+                      icon: Icons.timer_outlined,
+                    );
+                  },
+                ),
+              ),
+              Container(
+                height: 45,
+                width: 1,
+                color: context.dashlyColors.divider.withValues(alpha: 0.6),
+                margin: const EdgeInsets.symmetric(horizontal: 12),
+              ),
+              Expanded(
+                child: _buildLargeMetricItem(
+                  "TO DESTINATION",
+                  remainingKm.toStringAsFixed(2),
+                  "KM",
+                  icon: Icons.flag_rounded,
+                  accentColor: Colors.amberAccent,
+                ),
+              ),
+            ],
           ),
-          _buildHeroMetricDivider(),
-          _buildHeroMetricItem("DISTANCE", tracker.totalDistance.toStringAsFixed(2), "KM"),
-          _buildHeroMetricDivider(),
-          _buildHeroMetricItem("ALTITUDE", tracker.currentAltitude.toStringAsFixed(0), "M"),
+
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Divider(height: 1, color: context.dashlyColors.divider.withValues(alpha: 0.5)),
+          ),
+
+          // ROW 2: DISTANCE | ALTITUDE
+          Row(
+            children: [
+              Expanded(
+                child: _buildLargeMetricItem(
+                  "DISTANCE",
+                  tracker.totalDistance.toStringAsFixed(2),
+                  "KM",
+                  icon: Icons.directions_bike_rounded,
+                ),
+              ),
+              Container(
+                height: 45,
+                width: 1,
+                color: context.dashlyColors.divider.withValues(alpha: 0.6),
+                margin: const EdgeInsets.symmetric(horizontal: 12),
+              ),
+              Expanded(
+                child: _buildLargeMetricItem(
+                  "ALTITUDE",
+                  tracker.currentAltitude.toStringAsFixed(0),
+                  "M",
+                  icon: Icons.filter_hdr_rounded,
+                  accentColor: Colors.lightBlueAccent,
+                ),
+              ),
+            ],
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildLargeMetricItem(String label, String value, String unit, {IconData? icon, Color? accentColor}) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 13, color: accentColor ?? context.dashlyColors.accent),
+              const SizedBox(width: 5),
+            ],
+            Text(
+              label,
+              style: TextStyle(
+                color: context.dashlyColors.textSecondary,
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.1,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            Text(
+              value,
+              style: TextStyle(
+                color: context.dashlyColors.textPrimary,
+                fontSize: 26,
+                fontWeight: FontWeight.w900,
+                letterSpacing: -0.5,
+              ),
+            ),
+            if (unit.isNotEmpty) ...[
+              const SizedBox(width: 4),
+              Text(
+                unit,
+                style: TextStyle(
+                  color: accentColor ?? context.dashlyColors.accent,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ],
     );
   }
 
