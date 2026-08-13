@@ -15,6 +15,7 @@ import '../../models/event_model.dart';
 
 import 'package:geolocator/geolocator.dart';
 import '../../components/gps_status_banner.dart';
+import '../../components/off_route_alert_banner.dart';
 
 /// ════════════════════════════════════════════════════════════════
 /// StatsTrackingScreen — Standalone Battery Saver Mode (No Map)
@@ -393,7 +394,20 @@ class _StatsTrackingScreenState extends State<StatsTrackingScreen> {
 
                 // Battery Saver Mode Badge
                 _buildBatterySaverBadge(),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
+
+                // Off-Route Alert Banner with Pulse Animation
+                OffRouteAlertBanner(
+                  isOffRoute: () {
+                    final polyline = GeoUtils.parseGeoJsonCoordinates(currentEvent?.routeGeojson);
+                    return GeoUtils.isOffRoute(tracker.currentPosition, polyline, thresholdMeters: 40.0);
+                  }(),
+                  offRouteDistanceMeters: GeoUtils.minDistanceToPolyline(
+                    tracker.currentPosition ?? const DashlyLatLng(0, 0),
+                    GeoUtils.parseGeoJsonCoordinates(currentEvent?.routeGeojson),
+                  ),
+                ),
+                const SizedBox(height: 12),
 
                 // Hero Speedometer & 3 Key Telemetry Metrics Card
                 _buildHeroSpeedCard(tracker, avgSpeed),

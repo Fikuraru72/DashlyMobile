@@ -16,6 +16,7 @@ import '../../core/utils/geo_utils.dart';
 import '../../models/event_model.dart';
 import 'package:geolocator/geolocator.dart';
 import '../../components/gps_status_banner.dart';
+import '../../components/off_route_alert_banner.dart';
 
 class TrackingScreen extends StatefulWidget {
   final int eventId;
@@ -429,6 +430,24 @@ class _TrackingScreenState extends State<TrackingScreen> {
                 top: MediaQuery.of(context).padding.top + 65,
                 right: 16,
                 child: _buildFloatingSosButton(tracker),
+              ),
+
+            // 4b. OFF-ROUTE PULSING ALERT BANNER
+            if (() {
+              final polyline = GeoUtils.parseGeoJsonCoordinates(currentEvent?.routeGeojson);
+              return GeoUtils.isOffRoute(tracker.currentPosition, polyline, thresholdMeters: 40.0);
+            }())
+              Positioned(
+                top: MediaQuery.of(context).padding.top + 115,
+                left: 0,
+                right: 0,
+                child: OffRouteAlertBanner(
+                  isOffRoute: true,
+                  offRouteDistanceMeters: GeoUtils.minDistanceToPolyline(
+                    tracker.currentPosition!,
+                    GeoUtils.parseGeoJsonCoordinates(currentEvent?.routeGeojson),
+                  ),
+                ),
               ),
 
             // 4. DOCKED BOTTOM PANEL (STATISTIK - MENEMPEL DI BAWAH)
