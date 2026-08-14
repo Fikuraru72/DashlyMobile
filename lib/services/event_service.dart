@@ -49,19 +49,15 @@ class EventService {
         data: {'bibNumber': bibNumber.trim()},
       );
 
-      final responseData = response.data;
-      String msg = 'BIB verified successfully';
-      if (responseData is Map && responseData['message'] != null) {
-        final raw = responseData['message'];
-        msg = raw is List ? raw.join(', ') : raw.toString();
+      return {'success': true, 'message': 'OK'};
+    } on DioException catch (e) {
+      // HTTP 409 = "already verified" = BIB is correct, treat as success
+      if (e.response?.statusCode == 409) {
+        return {'success': true, 'message': 'OK'};
       }
 
-      return {
-        'success': true,
-        'message': msg,
-      };
-    } on DioException catch (e) {
-      String message = 'Failed to verify BIB';
+      // All other errors (400, 404, etc.) = BIB is wrong
+      String message = 'Invalid BIB number';
       if (e.response?.data != null && e.response?.data is Map) {
         final raw = e.response?.data['message'];
         if (raw is List) {
@@ -69,10 +65,7 @@ class EventService {
         } else if (raw != null) {
           message = raw.toString();
         }
-      } else if (e.message != null) {
-        message = e.message!;
       }
-      print('EventService: Failed to verify BIB for event $eventId: $message');
       return {'success': false, 'message': message};
     } catch (e) {
       return {'success': false, 'message': e.toString()};

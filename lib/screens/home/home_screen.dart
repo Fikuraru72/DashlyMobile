@@ -621,11 +621,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return GestureDetector(
       onTap: () {
-        if (isTracking) {
-          showTrackingModeSelectionDialog(context, eventId: event.id, eventName: event.name);
-        } else {
-          _handleStartTrackingFlow(context, event);
-        }
+        _handleStartTrackingFlow(context, event);
       },
       child: Container(
         width: double.infinity,
