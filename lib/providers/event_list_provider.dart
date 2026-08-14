@@ -154,6 +154,7 @@ class EventListProvider extends ChangeNotifier {
       final eventIndex = _exploreEvents.indexWhere((e) => e.id == eventId);
       if (eventIndex != -1) {
         _exploreEvents[eventIndex] = _exploreEvents[eventIndex].copyWith(
+          bibNumber: bibNumber,
           participantState: ParticipantState.confirmed,
         );
       }

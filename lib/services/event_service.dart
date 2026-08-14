@@ -46,18 +46,36 @@ class EventService {
     try {
       final response = await _dio.post(
         '/events/$eventId/verify-bib',
-        data: {'bibNumber': bibNumber},
+        data: {'bibNumber': bibNumber.trim()},
       );
 
-      final responseData = response.data as Map<String, dynamic>;
+      final responseData = response.data;
+      String msg = 'BIB verified successfully';
+      if (responseData is Map && responseData['message'] != null) {
+        final raw = responseData['message'];
+        msg = raw is List ? raw.join(', ') : raw.toString();
+      }
+
       return {
         'success': true,
-        'message': responseData['message'] ?? 'BIB verified successfully',
+        'message': msg,
       };
     } on DioException catch (e) {
-      final message = e.response?.data?['message'] ?? 'Failed to verify BIB';
+      String message = 'Failed to verify BIB';
+      if (e.response?.data != null && e.response?.data is Map) {
+        final raw = e.response?.data['message'];
+        if (raw is List) {
+          message = raw.join(', ');
+        } else if (raw != null) {
+          message = raw.toString();
+        }
+      } else if (e.message != null) {
+        message = e.message!;
+      }
       print('EventService: Failed to verify BIB for event $eventId: $message');
       return {'success': false, 'message': message};
+    } catch (e) {
+      return {'success': false, 'message': e.toString()};
     }
   }
 
