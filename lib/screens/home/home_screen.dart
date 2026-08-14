@@ -614,7 +614,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     String statusBadgeText = isTracking ? "LIVE TRACKING ACTIVE" : "READY TO TRACK";
     Color badgeColor = context.dashlyColors.accent;
-    String subtitleText = isTracking ? "Tap to continue tracking" : "Tap to verify BIB and start race tracking";
+    String subtitleText = isTracking ? "Tap to continue tracking" : "Tap to enter race tracking";
 
     return GestureDetector(
       onTap: () {
