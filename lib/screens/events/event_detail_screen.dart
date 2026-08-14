@@ -195,8 +195,7 @@ class EventDetailScreen extends StatelessWidget {
                                       .read<EventListProvider>()
                                       .verifyBib(event.id, inputBib);
 
-                                  final msg = res['message']?.toString().toLowerCase() ?? '';
-                                  if (res['success'] == true || msg.contains('already verified')) {
+                                  if (res['success'] == true) {
                                     if (context.mounted) {
                                       Navigator.pop(dialogCtx, true);
                                     }

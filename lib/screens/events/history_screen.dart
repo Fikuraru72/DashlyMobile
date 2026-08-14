@@ -239,8 +239,7 @@ class _MyEventCardItemState extends State<MyEventCardItem> {
     setState(() => _isVerifying = true);
     try {
       final res = await context.read<EventListProvider>().verifyBib(widget.event.id, inputBib);
-      final msg = res['message']?.toString().toLowerCase() ?? '';
-      if (res['success'] == true || msg.contains('already verified')) {
+      if (res['success'] == true) {
         showTrackingModeSelectionDialog(context, eventId: widget.event.id, eventName: widget.event.name);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
