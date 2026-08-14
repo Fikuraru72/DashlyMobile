@@ -604,7 +604,10 @@ class _HomeScreenState extends State<HomeScreen> {
     );
 
     if (isBibVerified == true && context.mounted) {
-      showTrackingModeSelectionDialog(context, eventId: event.id, eventName: event.name);
+      await Future.delayed(const Duration(milliseconds: 150));
+      if (context.mounted) {
+        showTrackingModeSelectionDialog(context, eventId: event.id, eventName: event.name);
+      }
     }
   }
 

@@ -247,7 +247,7 @@ class _RaceInterlockScreenState extends State<RaceInterlockScreen>
       if (!mounted) return;
       setState(() => _isProcessing = false);
 
-      if (result['success'] == true || (result['message'] != null && result['message'].toString().toLowerCase().contains('already verified'))) {
+      if (result['success'] == true) {
         await _showTrackingModeDialog();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
