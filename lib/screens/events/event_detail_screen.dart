@@ -77,16 +77,7 @@ class EventDetailScreen extends StatelessWidget {
       return;
     }
 
-    // 3. Bypass BIB prompt if participant is already confirmed/tracking or has verified BIB
-    bool isAlreadyVerified = event.participantState == ParticipantState.confirmed ||
-        event.participantState == ParticipantState.tracking ||
-        (event.bibNumber != null && event.bibNumber!.isNotEmpty);
-
-    if (isAlreadyVerified) {
-      showTrackingModeSelectionDialog(context, eventId: event.id, eventName: event.name);
-      return;
-    }
-
+    // 3. Prompt for BIB number verification (Pre-filled if previously assigned)
     if (!context.mounted) return;
     final TextEditingController bibController = TextEditingController(text: event.bibNumber ?? '');
 
